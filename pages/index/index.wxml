@@ -1,0 +1,63 @@
+<!--index.wxml-->
+<view class="container">
+  <view class="page-search">
+    <view class='user-info' bindtap="goUser">
+    <view class="user-avatar"> 
+    <open-data type="userAvatarUrl"></open-data>
+    </view>
+    </view>
+    <view class='search-input' bindtap="chooseLocation">
+      <text>搜索位置查找附近消防救援产品/人员</text>
+    </view>
+    <view class='search-memu' bindtap="listView">
+      <view class='fa fa-list-ul'></view>
+    </view>
+  </view>
+  <view class="page-map" >
+    <map
+      id="myMap"
+      style="width: 100%; height: 100%;"
+      latitude="{{latitude}}"
+      longitude="{{longitude}}"
+      markers="{{markers}}"
+      bindmarkertap="markertap"
+      bindtap="resetMaptip"
+      scale="17"
+      show-location
+    >
+      <button hidden="{{!hideBottom}}" class='btn-entry' bindtap="goFireEntry" hover-class="btn-entry-hover">
+        <view class='fa fa-edit'></view>
+        <text>消防录入</text>
+      </button>
+    </map>
+    <view hidden="{{hideBottom}}" class="bottom-tips card">
+        <view class="card-row">
+          <image class="card-meida" mode="aspectFill" src="{{markItem.url}}"></image>
+          <view class="card-info">
+            <text class="title">{{markItem.name}}</text>
+            <text class="timer" wx:if="{{markItem.timer}}">营业时间：{{markItem.timer}}</text>
+            <text class="desc">{{markItem.description}}{{markItem.level}}</text>
+          </view>
+
+          <button class="btn-goto" disabled="{{disabled}}" bindtap="startNav" hover-class="btn-goto-hover">
+            <view class="fa fa-map-signs"></view>导航
+          </button>
+        </view>
+
+        <view class="card-row card-bottom card-record" wx:if="{{markItem.type == '物资点'}}">
+          <view>
+            附近站点有<text class="card-count">{{markItem.itemCount}}</text>条消防录入记录
+          </view>
+          <button class="card-more" bindtap="goPointsDetail">
+            详情<view class="fa fa-angle-right"></view>
+          </button>
+        </view>
+
+        <view class="card-row card-bottom" wx:if="{{markItem.device}}">
+          <block wx:for="{{markItem.device}}" wx:key="">
+            <view class="tag">{{item.name}}</view>
+          </block>
+        </view>
+      </view>
+  </view>
+</view>
