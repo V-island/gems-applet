@@ -9,5 +9,6 @@
     "navigationBarTitleText": "星火源室内导航",
     "navigationBarTextStyle":"black"
   },
+  "style": "v2",
   "sitemapLocation": "sitemap.json"
 }

@@ -1,0 +1,11 @@
+/* component/FMAllLayerControl/FMAllLayerControl.wxss */
+.fm-control-layer {
+    width: 84rpx;
+    position: absolute;
+    background-color: white;
+    box-shadow: rgba(0, 0, 0, 0.3) 4rpx 4rpx 6rpx;
+    border-radius: 4rpx;
+    top: 328rpx;
+    left: 40rpx;
+    z-index: 1;
+}

@@ -1,0 +1,14 @@
+<!-- component/FMScrollGroupsControl/FMScrollGroupsControl.wxml -->
+<view class="fm-control-groups-btn" style="width: 84rpx; height: 84rpx; position: absolute; background-color: white; box-shadow: rgba(0, 0, 0, 0.3) 4rpx 4rpx 6rpx; border-radius: 4rpx; text-align: center; cursor: pointer; font-size: 0.8em; font-weight: bold; text-transform: uppercase; line-height: 84rpx; color: rgb(30, 130, 250);" bindtap="folderGroupBtns">
+    {{focusGroupName}}
+</view>
+<scroll-view class="fm-layer-list fm-groups" scroll-y="true" style="overflow: hidden; height: {{scrollHeight}}rpx;" scroll-into-view="gid_{{focusGroupID}}" scroll-with-animation="true" wx:if="{{isShowList === true}}">
+    <view wx:for="{{groupIDs}}" wx:key="key">
+        <view id="gid_{{item.gid}}" style="display: inline-block; text-align: center; width: 84rpx; height: 84rpx; line-height: 84rpx; margin: 0px; cursor: pointer; font-size: 0.8em; font-weight: bold; color: rgb(102, 102, 102);" bindtap="switchGroup" data-gid="{{item.gid}}">
+            <view style="color:{{focusGroupID == item.gid ? 'rgb(30, 130, 250)':'rgb(102, 102, 102)'}}; text-transform: uppercase;">
+                {{item.gname}}
+            </view>
+        </view>
+        <view wx:if="{{item.gid !== 1}}" style="height: 1px; border-top: 1px solid rgba(153, 153, 153, 0.45); border-right: none; border-bottom: none; border-left: none; border-image: initial; width: 60%; margin: 0px 20%;"></view>
+    </view>
+</scroll-view>
