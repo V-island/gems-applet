@@ -1,4 +1,6 @@
 {
   "navigationBarTitleText": "星火源",
-  "usingComponents": {}
+  "usingComponents": {
+    "FMScrollGroupsControl": "../../component/FMScrollGroupsControl/FMScrollGroupsControl"
+  }
 }

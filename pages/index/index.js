@@ -4,29 +4,12 @@ const app = getApp()
 
 Page({
   data: {
+    active: 0,
     activeNames: ['1'],
     projectList: [
       {
-        id: 202108261727,
-        name: "医院",
-        child: [
-          {
-            id: 2108261728,
-            name: "深圳南方医科大学",
-            icon: ""
-          },{
-            id: 2108261729,
-            name: "广东省人民医院",
-            icon: ""
-          },{
-            id: 2108261730,
-            name: "浙江省省人民医院",
-            icon: ""
-          }
-        ]
-      },{
         id: 202108261730,
-        name: "大型园区",
+        name: "园区",
         child: [
           {
             id: 2108261728,
@@ -34,10 +17,6 @@ Page({
             icon: ""
           }
         ]
-      },{
-        id: 202108261735,
-        name: "博物馆",
-        child: []
       }
     ]
   },
@@ -45,5 +24,8 @@ Page({
     this.setData({
       activeNames: event.detail,
     });
+  },
+  onClick(event) {
+    wx.navigateTo({url: event.detail})
   },
 });

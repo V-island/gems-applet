@@ -42,7 +42,7 @@ Component({
    */
   data: {
     btnUrl: './image/',
-    scrollHeight: 250,
+    scrollHeight: 180,
     isTop: false,
     isBottom: true,
     needArrow: false

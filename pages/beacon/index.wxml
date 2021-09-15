@@ -1,0 +1,13 @@
+<view class="view0">
+    <!-- 标题 -->
+    <view class="view1">
+    <text style="width:100rpx;">蓝牙设备ID</text>
+    <label class="label1">RSSI值</label>
+    </view>
+    <view style="position:absolute;top:92rpx;width:100%;height:100%">
+    <view class="view2" wx:for="{{Beacon}}" wx:key="*this">
+    <label class="label2">{{Beacon[index].ids}}</label>
+    <label class="label3">{{Beacon[index].rssis}}</label>
+    </view>
+    </view>
+</view>

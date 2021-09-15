@@ -7,4 +7,8 @@
         url="/pages/map/index?id={{item.id}}" />
     </van-collapse-item>
   </van-collapse>
+  <van-tabbar active="{{ active }}" bind:change="onClick">
+    <van-tabbar-item name="/pages/map/index" icon="home-o">地图</van-tabbar-item>
+    <van-tabbar-item name="/pages/beacon/index" icon="setting-o">蓝牙信息采集</van-tabbar-item>
+  </van-tabbar>
 </scroll-view>

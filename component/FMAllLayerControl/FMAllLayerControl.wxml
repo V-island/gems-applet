@@ -1,6 +1,0 @@
-<!-- component/FMAllLayerControl/FMAllLayerControl.wxml -->
-<view class="fm-control-layer">
-    <cover-view style="padding: 20rpx;cursor: pointer;" bindtap="switchLayers">
-        <cover-image src="{{btnUrl}}{{allLayer ? 'layers' :'layer'}}.png" style="width: 44rpx; height: 44rpx;"></cover-image>
-    </cover-view>
-</view>
