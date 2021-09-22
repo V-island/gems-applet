@@ -1,6 +1,7 @@
 // index.js
 // 获取应用实例
 const app = getApp()
+var util = app.GO.util
 
 Page({
   data: {
@@ -19,6 +20,10 @@ Page({
         ]
       }
     ]
+  },
+  onLoad: function (options) {
+    util.getPlaces()
+    wx.navigateTo({url: '/pages/map/index'})
   },
   onChange(event) {
     this.setData({

@@ -24,6 +24,17 @@ Page({
   locationMarker: null,
   // 定位sdk实例
   locSDK: null,
+
+  /**
+   * 生命周期函数--监听页面加载
+   */
+  onLoad: function () {
+    var that = this;
+
+    // 获取定位功能
+    this.getDevices()
+    // this.getIBeaconInfo()
+  },
   /**
    * 生命周期函数--监听页面初次渲染完成
    */
@@ -280,6 +291,62 @@ Page({
       })
     });
   },
+  ///////////////////////////////////////////////
+  //系统统一回调事件(start)
+  //////////////////////////////////////////////
+  // 获取Beacon信息
+  getIBeaconInfo: function () {
+    var that = this;
+    //是否正确打开蓝牙
+    wx.openBluetoothAdapter({
+      success: function (res) {
+        console.log("正常打开蓝牙适配器！");
+        //开始搜索附近的蓝牙设备
+        that.getDevicesDiscovery()
+      },
+      fail: function (res) {
+        console.info('没有打开蓝牙适配器');
+      },
+      complete: function (res) {
+        //complete
+      }
+    })
+  },
+  // 搜索附近的蓝牙设备
+  getDevicesDiscovery: function () {
+    wx.startBluetoothDevicesDiscovery({
+      success: function (res) {
+        //获取在蓝牙模块生效期间所有已发现的蓝牙设备
+        wx.getBluetoothDevices({
+          success: function (res) {
+            //定义一个对象数组来接收Beacon的信息
+            var arrayIBeaconInfo = [];
+            for (var i = 0; i < res.devices.length; i++) {
+              //在BrightBeacon中，deviceId是对应的MAC
+              if (res.devices[i].deviceId == 'AC:23:3F:20:D3:81') {
+                //将对象加入到Beacon数组中
+                arrayIBeaconInfo.push(`${res.devices[i].deviceId},${res.devices[i].RSSI}`);
+              }
+            }
+            //将对象存入data中的全局变量Beacon中
+            that.setData({
+              Beacon: arrayIBeaconInfo.join(';'),
+            })
+          },
+          fail: function (res) {
+            console.log("获取蓝牙设备失败！");
+          }
+        })
+      },
+      fail: function (res) {
+        console.log("搜索附近蓝牙失败！");
+      }
+    })
+  },
+  ///////////////////////////////////////////////
+  //楼层控件回调事件(end)
+  //////////////////////////////////////////////
+
   ///////////////////////////////////////////////
   //楼层控件回调事件(start)
   //////////////////////////////////////////////

@@ -3,7 +3,6 @@
  * 901 请求超时调用request方法失败
  * 400 图片上传失败
  */
-var { hexMD5, b64Md5 } = require('/md5.js')
 var contentType = 'application/x-www-form-urlencoded';
 var contentTypeJson = 'application/json';
 
@@ -22,13 +21,13 @@ function login(fn) {
         var params = {
           code: res.code
         }
-        _self.request('POST', params, `wx/login`, contentType, '', function (res) {
+        _self.request('get', params, `ma/user/login`, contentType, '', function (res) {
           //存储token返回数据
-          // console.log('exf.login', res, res.data)
+          console.log('exf.login', res, res.data)
           //请求成功
           if (res.data) {
-            _self.storage('set', 'token', `Bearer ${res.data}`);
-            return typeof fn == 'function' && fn({ token: `Bearer ${res.data}`, statusCode: 200 });
+            _self.storage('set', 'token', `${res.data}`);
+            return typeof fn == 'function' && fn({ token: `${res.data}`, statusCode: 200 });
           }
         })
       } else {
@@ -77,224 +76,67 @@ function checkLogin(fn) {
 function userInfo(token, fn) {
   var _self = this;
 
-  _self.request('GET', '', 'wx/me', contentType, token, function (res) {
+  _self.request('GET', '', 'ma/user/info', contentType, token, function (res) {
     return typeof fn == 'function' && fn(res);
   })
 }
 
-/**
- * 更新个人位置信息
- */
-function userLocation(params, fn){
-  var _self = this;
-
-  //判断登录状态
-  _self.checkLogin(function (res) {
-    _self.request('PUT', params, 'wx/location_info', contentTypeJson, res.token, function (res) {
-      return typeof fn == 'function' && fn(res);
-    })
-  })
-}
-
-/*----------------------------------位置点信息-------------------------------*/
+/*----------------------------------项目相关-------------------------------*/
 
 /**
- * 获取物资/救援人员信息点列表
+ * 获取项目列表
  * params fn 回调函数
  * return fn 回调函数
  */
-function mapPoints(fn) {
+function getPlaces(fn) {
   var _self = this;
   _self.checkLogin(function (res) {
-    _self.request('GET', '', 'wx/v1/map_points', contentType, res.token, function (res) {
+    _self.request('GET', '', 'ma/places', contentType, res.token, function (res) {
       return typeof fn == 'function' && fn(res.data.content || []);
     })
   })
 }
 
 /**
- * 查询位置点简易信息
+ * 查询项目详情
  * params fn 回调函数 id 位置点ID
  * return fn 回调函数
  */
-function pointsInfo(id, fn) {
+function placesDetail(id, fn) {
   var _self = this;
   _self.checkLogin(function (res) {
-    _self.request('GET', '', `wx/v1/map_point/${id}`, contentType, res.token, function (res) {
+    _self.request('GET', '', `ma/places/${id}`, contentType, res.token, function (res) {
       return typeof fn == 'function' && fn(res.data);
     })
   })
 }
 
-/**
- * 查询位置点消防记录详情
- * params fn 回调函数 id 位置点ID
- * return fn 回调函数
- */
-function pointsDetail(id, fn) {
-  var _self = this;
-  _self.checkLogin(function (res) {
-    _self.request('GET', '', `wx/v1/location_point/${id}`, contentType, res.token, function (res) {
-      return typeof fn == 'function' && fn(res.data);
-    })
-  })
-}
+/*----------------------------------地图相关-------------------------------*/
 
 /**
- * 获取附近物资点位
+ * 获取设备列表
  * params fn 回调函数
  * return fn 回调函数
  */
-function annexPoints(params,fn) {
+function getDevices(params, fn) {
   var _self = this;
   _self.checkLogin(function (res) {
-    // '', `wx/v1/location_points`
     _self.request('GET', params, `wx/v1/location_point/near`, contentType, res.token, function (res) {
       return typeof fn == 'function' && fn(res.data);
     })
   })
 }
-
-/*----------------------------------物资管理-------------------------------*/
-
-/*
- * 获取物资列表
- * params fn 回调函数
- * return fn 回调函数 
- */
-function materialList(params, fn) {
-  var _self = this;
-  _self.checkLogin(function (res) {
-    _self.request('GET', params, 'wx/v1/items', contentType, res.token, function (res) {
-      return typeof fn == 'function' && fn(res);
-    })
-  })
-}
-
-/*
- * 新增物资信息
- * params fn 回调函数  params传入参数
- * return fn 回调函数 
- */
-function createMaterial(params, fn) {
-  var _self = this;
-
-  _self.checkLogin(function (res) {
-    _self.request('POST', params, 'wx/v1/item', contentTypeJson, res.token, function (res) {
-      return typeof fn == 'function' && fn(res);
-    })
-  })
-}
-
-/*----------------------------------证件管理-------------------------------*/
-
 /**
- * 查询证件信息列表
+ * 获取终端坐标
  * params fn 回调函数
  * return fn 回调函数
  */
-function credentialsList(fn) {
+function getLocation(params, fn) {
   var _self = this;
   _self.checkLogin(function (res) {
-    _self.request('GET', '', 'wx/v1/certificates', contentType, res.token, function (res) {
-      return typeof fn == 'function' && fn(res);
+    _self.request('GET', params, `ma/location`, contentType, res.token, function (res) {
+      return typeof fn == 'function' && fn(res.data);
     })
-  })
-}
-
-/**
- * 新增救援证件
- * params fn 回调函数  params传入参数
- * return fn 回调函数
- */
-function createRescue(params, fn){
-  var _self = this;
-
-  _self.checkLogin(function (res) {
-    _self.request('POST', params, 'wx/v1/certificate', contentTypeJson, res.token, function (res) {
-      return typeof fn == 'function' && fn(res);
-    })
-  })
-}
-
-/**
- * 获取救援证详情
- * params fn 回调函数 id 救援证ID
- * return fn 回调函数
- */
-function rescueDetail(id, fn) {
-  var _self = this;
-  _self.checkLogin(function (res) {
-    _self.request('GET', '', `wx/v1/certificate/${id}`, contentType, res.token, function (res) {
-      return typeof fn == 'function' && fn(res);
-    })
-  })
-}
-
-
-
-/*----------------------------------图片上传接口-------------------------------*/
-
-/**
- * 获取阿里云OSS上传凭证
- * params fn 回调函数 files图片数组
- * return fn 回调函数 
- */
-function uploadImage(file, fn) {
-  var _self = this
-  var params = { dir: 'exf-test' }
-
-  //显示加载动画
-  _self.showToast()
-
-  //判断登录状态
-  _self.checkLogin(function (res) {
-    _self.request('GET', params, `image/policy`, contentType, res.token, function (res) {
-      //获取policy信息成功
-      var now = Date.now().toString()
-      var random = Math.random().toString().split('.')[1]
-
-      var _file = file.split('.')[0]    //文件名
-      var _ext = file.split('.')[1]     //文件类型
-      var key = `${res.data.dir}/${hexMD5(_file) + now + random}.${_ext}` //md5转码后的新文件名
-
-      var formData = {
-        key: key,
-        policy: res.data.policy,
-        OSSAccessKeyId: res.data.accessId,
-        signature: res.data.signature
-      }
-      
-      _self.uptoaliyun(res.data.host, file, formData, function(){
-        //关闭加载动画
-        _self.hideToast()
-
-        return typeof fn == 'function' && fn({ url: `${res.data.imageHost}/${key}`})
-      })
-    })
-  })
-}
-
-/**
-*  阿里云上传
-*  params fn 回调函数 url地址 files图片数组 formData其他额外的参数
-*  return fn 回调函数
-*/
-
-function uptoaliyun(url, file, formData, fn) {
-  wx.uploadFile({
-    url: url,
-    filePath: file,
-    name: 'file',
-    formData: formData,
-    success: function (e) {
-      if (e.statusCode == 204) {
-        return typeof fn == 'function' && fn();
-      }
-    },
-    fail: function (err) {
-      _self.showToast('网络不给力...', 'loading', 1500)
-    }
   })
 }
 
@@ -470,27 +312,15 @@ module.exports = {
   // 登录/判断
   login: login,
   checkLogin: checkLogin,
-
-  // 图片上传
-  uploadImage: uploadImage,
-  uptoaliyun: uptoaliyun,
-
-  // 位置点信息
-  mapPoints: mapPoints,
-  pointsInfo: pointsInfo,
-  pointsDetail: pointsDetail,
-  annexPoints: annexPoints,
-
-  // 物资管理
-  materialList: materialList,
-  createMaterial: createMaterial,
-
-  // 救援证管理
-  credentialsList: credentialsList,
-  createRescue: createRescue,
-  rescueDetail: rescueDetail,
   
   // 个人信息
   userInfo: userInfo,
-  userLocation: userLocation
+
+  // 项目相关
+  getPlaces: getPlaces,
+  placesDetail: placesDetail,
+
+  // 地图相关
+  getDevices: getDevices,
+  getLocation: getLocation
 }
