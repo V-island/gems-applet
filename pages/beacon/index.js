@@ -49,11 +49,9 @@ Page({
                 //开始搜索附近的蓝牙设备
                 wx.startBluetoothDevicesDiscovery({
                     success: function (res) {
-                        console.log(res)
                         //获取在蓝牙模块生效期间所有已发现的蓝牙设备
                         wx.getBluetoothDevices({
                             success: function (res) {
-                                console.log(res)
                                 //j是表示获取到的Beacon个数
                                 var j = 0;
                                 //定义一个对象数组来接收Beacon的信息
@@ -65,7 +63,7 @@ Page({
                                 };
                                 for (var i = 0; i < res.devices.length; i++) {
                                     //获取特定的八个Beaon，其中这些具体的deviceId可以在智石提供的软件BrightBeacon中的获取，在BrightBeacon中，deviceId是对应的MAC
-                                    if (res.devices[i].deviceId == 'AC:23:3F:20:D3:81') {
+                                    if (res.devices[i].deviceId == '30:EB:1F:1A:56:5C' ||res.devices[i].deviceId == '30:EB:1F:1A:56:63' || res.devices[i].deviceId == '30:EB:1F:1A:56:62' || res.devices[i].deviceId == '30:EB:1F:1A:56:5F' || res.devices[i].deviceId == '30:EB:1F:1A:56:61') {
                                         objectIBeaconInfo = {
                                             ids: res.devices[i].deviceId,
                                             rssis: res.devices[i].RSSI
@@ -73,6 +71,7 @@ Page({
                                         //将对象加入到Beacon数组中
                                         arrayIBeaconInfo.push(objectIBeaconInfo);
                                         j++;
+                                        console.log(res.devices[i])
                                     }
                                 }
                                 //冒泡算法，将rssi值在arrayIBeaconInfo中从大到小进行排列

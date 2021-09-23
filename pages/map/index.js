@@ -32,7 +32,6 @@ Page({
     var that = this;
 
     // 获取定位功能
-    this.getDevices()
     // this.getIBeaconInfo()
   },
   /**
