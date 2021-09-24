@@ -1,6 +1,7 @@
 {
   "navigationBarTitleText": "星火源",
   "usingComponents": {
-    "FMScrollGroupsControl": "../../component/FMScrollGroupsControl/FMScrollGroupsControl"
+    "FMScrollGroupsControl": "../../component/FMScrollGroupsControl/FMScrollGroupsControl",
+    "BlueToothView": "../../component/BlueToothView"
   }
 }

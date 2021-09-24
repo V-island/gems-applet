@@ -22,7 +22,7 @@ Page({
     ]
   },
   onLoad: function (options) {
-    util.getPlaces()
+    // util.getPlaces()
     wx.navigateTo({url: '/pages/map/index'})
   },
   onChange(event) {

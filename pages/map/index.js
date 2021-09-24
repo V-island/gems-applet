@@ -16,6 +16,7 @@ Page({
     },
     is3D: true,
     isAllLayer: false,
+    isOpenBluetooth: false,
   },
   // 定义全局map变量
   fmap: null,
@@ -24,20 +25,45 @@ Page({
   locationMarker: null,
   // 定位sdk实例
   locSDK: null,
-
-  /**
-   * 生命周期函数--监听页面加载
-   */
-  onLoad: function () {
-    var that = this;
-
-    // 获取定位功能
-    // this.getIBeaconInfo()
-  },
   /**
    * 生命周期函数--监听页面初次渲染完成
    */
   onReady() {
+    var that = this;
+    //是否正确打开蓝牙
+    wx.openBluetoothAdapter({
+      success: function (res) {
+        console.log("正常打开蓝牙适配器！");
+        that.setData({
+          isOpenBluetooth: true
+        })
+        // 初始化地图
+        that.initFengMap();
+        //开始搜索附近的蓝牙设备
+        that.getDevicesDiscovery();
+      },
+      fail: function (res) {
+        console.info('没有打开蓝牙适配器');
+        that.setData({
+          isOpenBluetooth: false
+        })
+      }
+    })
+  },
+  /**
+   * 生命周期函数--监听页面卸载
+   */
+  onUnload: function () {
+    if (this.fmap) {
+      this.fmap.dispose();
+      this.fmap = null;
+    }
+    if (this.locSDK) {
+      this.locSDK.stopUpdateLocation();
+    }
+  },
+  // 初始化蜂鸟地图
+  initFengMap: function () {
     // 获取canvas
     wx.createSelectorQuery().select('#fengMap').node().exec((res) => {
       const canvas = res[0].node;
@@ -198,18 +224,6 @@ Page({
       }
     })
   },
-  /**
-   * 生命周期函数--监听页面卸载
-   */
-  onUnload: function () {
-    if (this.fmap) {
-      this.fmap.dispose();
-      this.fmap = null;
-    }
-    if (this.locSDK) {
-      this.locSDK.stopUpdateLocation();
-    }
-  },
   // 手指触摸动作开始
   touchStart(e) {
     this.canvas.dispatchTouchEvent({
@@ -293,24 +307,6 @@ Page({
   ///////////////////////////////////////////////
   //系统统一回调事件(start)
   //////////////////////////////////////////////
-  // 获取Beacon信息
-  getIBeaconInfo: function () {
-    var that = this;
-    //是否正确打开蓝牙
-    wx.openBluetoothAdapter({
-      success: function (res) {
-        console.log("正常打开蓝牙适配器！");
-        //开始搜索附近的蓝牙设备
-        that.getDevicesDiscovery()
-      },
-      fail: function (res) {
-        console.info('没有打开蓝牙适配器');
-      },
-      complete: function (res) {
-        //complete
-      }
-    })
-  },
   // 搜索附近的蓝牙设备
   getDevicesDiscovery: function () {
     wx.startBluetoothDevicesDiscovery({
@@ -322,7 +318,7 @@ Page({
             var arrayIBeaconInfo = [];
             for (var i = 0; i < res.devices.length; i++) {
               //在BrightBeacon中，deviceId是对应的MAC
-              if (res.devices[i].deviceId == 'AC:23:3F:20:D3:81') {
+              if (res.devices[i].deviceId == '30:ER:1F:1A:56:62' || res.devices[i].deviceId == '30:ER:1F:1A:56:61' || res.devices[i].deviceId == 'AC:23:3F:20:D3:81' || res.devices[i].deviceId == 'AC:23:3F:20:D3:81' || res.devices[i].deviceId == 'AC:23:3F:20:D3:81') {
                 //将对象加入到Beacon数组中
                 arrayIBeaconInfo.push(`${res.devices[i].deviceId},${res.devices[i].RSSI}`);
               }
@@ -341,6 +337,14 @@ Page({
         console.log("搜索附近蓝牙失败！");
       }
     })
+  },
+  // 是否跳过蓝牙验证
+  onLeapfrog: function() {
+    this.setData({
+      isOpenBluetooth: true
+    })
+    // 初始化地图
+    this.initFengMap();
   },
   ///////////////////////////////////////////////
   //楼层控件回调事件(end)

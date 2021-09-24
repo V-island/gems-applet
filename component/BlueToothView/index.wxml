@@ -1,0 +1,14 @@
+<!--component/BlueToothView/index.wxml-->
+<view class="container">
+    <view class="main" style="flex-direction:column;">
+        <h5 class="title">请打开蓝牙使用本系统</h5>
+        <p class="explain">1.找到【<cover-image class="icon1" src="{{btnUrl}}blueToothIcon-1.png"></cover-image>】图标并打开蓝牙<br/>或在【设置】蓝牙中打开蓝牙</p>
+        <cover-image src="{{btnUrl}}blueTooth-1.png"></cover-image>
+        <p class="explain">2.找到【<cover-image class="icon2" src="{{btnUrl}}blueToothIcon-2.png"></cover-image>】图标并打开位置授权<br/>或在【设置】【隐私】【位置信息】中开启授权</p>
+        <cover-image src="{{btnUrl}}blueTooth-2.png"></cover-image>
+    </view>
+    <view class="footer">
+        <text class="link" bindtap="onLeapfrog">跳过</text>
+        <text class="remark">无法使用实时导航</text>
+    </view>
+</view>
