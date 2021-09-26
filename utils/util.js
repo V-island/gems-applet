@@ -88,10 +88,24 @@ function userInfo(token, fn) {
  * params fn 回调函数
  * return fn 回调函数
  */
-function getPlaces(fn) {
+function getPlaces(params, fn) {
   var _self = this;
   _self.checkLogin(function (res) {
-    _self.request('GET', '', 'ma/places', contentType, res.token, function (res) {
+    _self.request('GET', params, 'ma/places', contentType, res.token, function (res) {
+      return typeof fn == 'function' && fn(res.data.content || []);
+    })
+  })
+}
+
+/**
+ * 获取项目分类列表
+ * params fn 回调函数
+ * return fn 回调函数
+ */
+function getCategories(fn) {
+  var _self = this;
+  _self.checkLogin(function (res) {
+    _self.request('GET', '', 'ma/place/categories', contentType, res.token, function (res) {
       return typeof fn == 'function' && fn(res.data.content || []);
     })
   })
@@ -121,7 +135,20 @@ function placesDetail(id, fn) {
 function getDevices(params, fn) {
   var _self = this;
   _self.checkLogin(function (res) {
-    _self.request('GET', params, `wx/v1/location_point/near`, contentType, res.token, function (res) {
+    _self.request('GET', params, `ma/devices`, contentType, res.token, function (res) {
+      return typeof fn == 'function' && fn(res.data);
+    })
+  })
+}
+/**
+ * 获取数据列表
+ * params fn 回调函数
+ * return fn 回调函数
+ */
+function getRooms(params, fn) {
+  var _self = this;
+  _self.checkLogin(function (res) {
+    _self.request('GET', params, `ma/rooms`, contentType, res.token, function (res) {
       return typeof fn == 'function' && fn(res.data);
     })
   })
@@ -319,8 +346,10 @@ module.exports = {
   // 项目相关
   getPlaces: getPlaces,
   placesDetail: placesDetail,
+  getCategories: getCategories,
 
   // 地图相关
   getDevices: getDevices,
+  getRooms: getRooms,
   getLocation: getLocation
 }
