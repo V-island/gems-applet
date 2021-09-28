@@ -23,11 +23,11 @@ function login(fn) {
         }
         _self.request('get', params, `ma/user/login`, contentType, '', function (res) {
           //存储token返回数据
-          console.log('exf.login', res, res.data)
           //请求成功
           if (res.data) {
-            _self.storage('set', 'token', `${res.data}`);
-            return typeof fn == 'function' && fn({ token: `${res.data}`, statusCode: 200 });
+            var token = res.data.token
+            _self.storage('set', 'token', `${token}`);
+            return typeof fn == 'function' && fn({ token: `${token}`, statusCode: 200 });
           }
         })
       } else {
@@ -48,13 +48,7 @@ function checkLogin(fn) {
   var token = _self.storage('get', 'token');
   //判断token是否过期
   if (token) {
-    _self.userInfo(token, function (res) {
-      if (res.statusCode == 200) {
-        return typeof fn == 'function' && fn({ token: res.token });
-      }else{
-        return typeof fn == 'function' && fn({ token: token });
-      }
-    })
+    return typeof fn == 'function' && fn({ token: token });
   } else {
     //token 已过期，调用login方法重新登录并查询用户绑定情况
     _self.login(function (res) {
@@ -92,7 +86,7 @@ function getPlaces(params, fn) {
   var _self = this;
   _self.checkLogin(function (res) {
     _self.request('GET', params, 'ma/places', contentType, res.token, function (res) {
-      return typeof fn == 'function' && fn(res.data.content || []);
+      return typeof fn == 'function' && fn(res.data || []);
     })
   })
 }
@@ -106,7 +100,7 @@ function getCategories(fn) {
   var _self = this;
   _self.checkLogin(function (res) {
     _self.request('GET', '', 'ma/place/categories', contentType, res.token, function (res) {
-      return typeof fn == 'function' && fn(res.data.content || []);
+      return typeof fn == 'function' && fn(res.data || []);
     })
   })
 }
@@ -132,10 +126,10 @@ function placesDetail(id, fn) {
  * params fn 回调函数
  * return fn 回调函数
  */
-function getDevices(params, fn) {
+function getDevices(id, fn) {
   var _self = this;
   _self.checkLogin(function (res) {
-    _self.request('GET', params, `ma/devices`, contentType, res.token, function (res) {
+    _self.request('GET', {placeId: id}, `ma/devices`, contentType, res.token, function (res) {
       return typeof fn == 'function' && fn(res.data);
     })
   })
@@ -192,13 +186,7 @@ function request(method, params, urlName, contentType, token, fn) {
         success: function (res) {
           // 请求状态码
           if (res.statusCode == 200) {
-            if (res.data.statusCode == 0){
-              return typeof fn == 'function' && fn(res.data)
-            }else{
-              _self.showModal(res.data.msg, false, '提示', '刷新', function(){
-                _self.login(fn)
-              })
-            }
+            return typeof fn == 'function' && fn(res.data)
           } else if (res.statusCode == 400) {
             _self.showModal('400 用户不存在或者密码错误，登录失败', false, '提示')
           } else if (res.statusCode == 403 || res.statusCode == 401) {
@@ -219,7 +207,7 @@ function request(method, params, urlName, contentType, token, fn) {
           _self.hideToast()
           //关闭加载动画
           wx.hideNavigationBarLoading()
-          _self.showModal('请求超时，请检查网络后再试', false, '提示')
+          // _self.showModal('请求超时，请检查网络后再试', false, '提示')
         },
       })
     }

@@ -5,32 +5,21 @@ var util = app.GO.util
 
 Page({
   data: {
-    active: 0,
-    activeNames: ['1'],
-    projectList: [
-      {
-        id: 202108261730,
-        name: "园区",
-        child: [
-          {
-            id: 2108261728,
-            name: "星火源",
-            icon: ""
-          }
-        ]
-      }
-    ]
+    placeList: []
   },
   onLoad: function (options) {
-    // util.getPlaces()
-    wx.navigateTo({url: '/pages/map/index'})
+    var _self = this;
+    // 加载项目列表
+    util.getPlaces({}, function (res) {
+      _self.setData({
+        placeList: res.list
+      })
+    })
   },
-  onChange(event) {
-    this.setData({
-      activeNames: event.detail,
-    });
-  },
-  onClick(event) {
-    wx.navigateTo({url: event.detail})
+  toMap(e) {
+    const {id, mapid, name} = e.currentTarget.dataset;
+    wx.navigateTo({
+      url: `/pages/map/index?id=${id}&mapId=${mapid}&name=${name}`
+    })
   },
 });

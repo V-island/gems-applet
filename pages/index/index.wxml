@@ -1,14 +1,8 @@
 <!--index.wxml-->
 <scroll-view scroll-y="true">
-  <van-collapse value="{{ activeNames }}" bind:change="onChange">
-    <van-collapse-item wx:for="{{projectList}}" wx:key="index" wx:for-item="items" title="{{items.name}}"
-      name="{{items.id}}" content-class="link">
-      <van-cell wx:for="{{items.child}}" wx:for-item="item" wx:key="_index" title="{{item.name}}" link-type="navigateTo"
-        url="/pages/map/index?id={{item.id}}" />
-    </van-collapse-item>
-  </van-collapse>
-  <van-tabbar active="{{ active }}" bind:change="onClick">
-    <van-tabbar-item name="/pages/map/index" icon="home-o">地图</van-tabbar-item>
-    <van-tabbar-item name="/pages/beacon/index" icon="setting-o">蓝牙信息采集</van-tabbar-item>
-  </van-tabbar>
+  <view wx:for="{{placeList}}" wx:key="id">
+    <view data-id="{{item.id}}" data-mapId="{{item.mapId}}" data-name="{{item.name}}" class="list-item" bindtap="toMap">
+      {{item.name}}
+    </view>
+  </view>
 </scroll-view>

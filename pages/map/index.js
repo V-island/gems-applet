@@ -1,12 +1,18 @@
 // pages/map/index.js
-
 import {
   fengmap
 } from '../../utils/fengmap.miniprogram.min.js';
 import LocSDK from '../../utils/locSDK';
 
+// 获取应用实例
+const app = getApp()
+var util = app.GO.util
+
 Page({
   data: {
+    placeId: '',
+    fmapID: '',
+    appName: '',
     mapLoaded: false, //地图是否加载完成
     focusGroupID: 1,
     mapGroupIDs: [],
@@ -25,10 +31,13 @@ Page({
   locationMarker: null,
   // 定位sdk实例
   locSDK: null,
-  /**
-   * 生命周期函数--监听页面初次渲染完成
-   */
-  onReady() {
+  onLoad: function (options) {
+    const { id, mapId, name } = options
+    this.setData({
+      placeId: id,
+      fmapID: mapId,
+      appName: name
+    })
     var that = this;
     //是否正确打开蓝牙
     wx.openBluetoothAdapter({
@@ -39,13 +48,21 @@ Page({
         })
         // 初始化地图
         that.initFengMap();
-        //开始搜索附近的蓝牙设备
-        that.getDevicesDiscovery();
+        // 项目相关设备列表
+        util.getDevices(id, function (res) {
+          console.log(res)
+          //开始搜索附近的蓝牙设备
+          setInterval(that.getDevicesDiscovery(res || []), 1000);
+        })
       },
       fail: function (res) {
         console.info('没有打开蓝牙适配器');
         that.setData({
           isOpenBluetooth: false
+        })
+        // 项目相关设备列表
+        util.getDevices(id, function (res) {
+          console.log(res)
         })
       }
     })
@@ -68,12 +85,8 @@ Page({
     wx.createSelectorQuery().select('#fengMap').node().exec((res) => {
       const canvas = res[0].node;
       this.canvas = canvas
-
       wx.createSelectorQuery().select("#temp").node().exec((tempRes) => {
         const tmpCanvas = tempRes[0].node;
-
-        const fmapID = "1428635104853151746";
-
         const mapOptions = {
           //必要，地图容器
           canvas: canvas,
@@ -90,7 +103,7 @@ Page({
           // 初始化地图中心点坐标
           // defaultViewCenter: {x:12961580.734922647,y:4861883.567717729},
           // 地图应用名称p
-          appName: '星火源',
+          appName: this.data.appName,
           // 地图应用密钥
           key: '75165ff8c8231fdedc78c2b82447806a',
         };
@@ -99,7 +112,7 @@ Page({
         this.fmap = new fengmap.FMMap(mapOptions);
 
         //打开Fengmap服务器的地图数据和主题
-        this.fmap.openMapById(fmapID, function (error) {
+        this.fmap.openMapById(this.data.fmapID, function (error) {
           //打印错误信息
           // console.log(error);
         });
@@ -215,14 +228,14 @@ Page({
       })
     })
 
-    // 初始化定位sdk
-    this.locSDK = new LocSDK();
-    // 实时定位
-    this.locSDK.updateLocation((data) => {
-      if (this.data.mapLoaded) {
-        this.addOrMoveLocationMarker(data)
-      }
-    })
+    // // 初始化定位sdk
+    // this.locSDK = new LocSDK();
+    // // 实时定位
+    // this.locSDK.updateLocation((data) => {
+    //   if (this.data.mapLoaded) {
+    //     this.addOrMoveLocationMarker(data)
+    //   }
+    // })
   },
   // 手指触摸动作开始
   touchStart(e) {
@@ -308,24 +321,24 @@ Page({
   //系统统一回调事件(start)
   //////////////////////////////////////////////
   // 搜索附近的蓝牙设备
-  getDevicesDiscovery: function () {
+  getDevicesDiscovery: function (deviceList) {
+    var that = this;
     wx.startBluetoothDevicesDiscovery({
       success: function (res) {
         //获取在蓝牙模块生效期间所有已发现的蓝牙设备
         wx.getBluetoothDevices({
           success: function (res) {
+            console.log(res)
             //定义一个对象数组来接收Beacon的信息
-            var arrayIBeaconInfo = [];
-            for (var i = 0; i < res.devices.length; i++) {
-              //在BrightBeacon中，deviceId是对应的MAC
-              if (res.devices[i].deviceId == '30:ER:1F:1A:56:62' || res.devices[i].deviceId == '30:ER:1F:1A:56:61' || res.devices[i].deviceId == 'AC:23:3F:20:D3:81' || res.devices[i].deviceId == 'AC:23:3F:20:D3:81' || res.devices[i].deviceId == 'AC:23:3F:20:D3:81') {
-                //将对象加入到Beacon数组中
-                arrayIBeaconInfo.push(`${res.devices[i].deviceId},${res.devices[i].RSSI}`);
-              }
-            }
+            let arrayIBeaconInfo = res.devices.filter(devices => deviceList.some(item => devices.deviceId === item));
+            let iBeaconInfo = arrayIBeaconInfo.map(item => {
+              return `${item.deviceId},${item.RSSI}`
+            })
+            console.log(arrayIBeaconInfo)
+            console.log(iBeaconInfo)
             //将对象存入data中的全局变量Beacon中
             that.setData({
-              Beacon: arrayIBeaconInfo.join(';'),
+              Beacon: iBeaconInfo.join(';'),
             })
           },
           fail: function (res) {

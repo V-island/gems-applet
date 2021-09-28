@@ -1,8 +1,7 @@
 {
     "pages": [
         "pages/index/index",
-        "pages/map/index",
-        "pages/beacon/index"
+        "pages/map/index"
     ],
     "window": {
         "backgroundTextStyle": "light",

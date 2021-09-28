@@ -1,5 +1,21 @@
 /**index.wxss**/
-.link {
-  padding: 0 !important;
-  background-color: #eee !important;
+.list-item {
+  position: relative;
+  height: 40px;
+  line-height: 40px;
+  border-bottom: 1px solid #eee;
+  padding: 0 20px;
+}
+
+.list-item::after {
+  content: '';
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  margin-top: -5px;
+  width: 9px;
+  height: 9px;
+  border-top: 2rpx solid #aaa;
+  border-right: 2rpx solid #aaa;
+  transform: rotate(45deg);
 }
