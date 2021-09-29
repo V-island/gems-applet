@@ -10,10 +10,13 @@ Page({
   onLoad: function (options) {
     var _self = this;
     // 加载项目列表
-    util.getPlaces({}, function (res) {
-      _self.setData({
-        placeList: res.list
-      })
+    // util.getPlaces({}, function (res) {
+    //   _self.setData({
+    //     placeList: res.list
+    //   })
+    // })
+    wx.navigateTo({
+      url: `/pages/map/index?id=12&mapId=1428635104853151746&name=星火源`
     })
   },
   toMap(e) {

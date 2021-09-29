@@ -1,0 +1,36 @@
+<!--pages/mapnav/mapnav.wxml-->
+<view class="container">
+<view class="map-container">
+  <map
+				class="map"
+        id="map"
+        min-scale="{{minScale}}"
+        max-scale="{{maxScale}}"
+				latitude="{{location.latitude}}"
+				longitude="{{location.longitude}}"
+				scale="{{scale}}"
+				setting="{{setting}}"
+				enable-overlooking="{{isOverLooking}}"
+				enable-3D="{{is3D}}"
+				enable-poi="{{isShowPoi}}"
+				markers="{{markers}}"
+			>
+			
+      </map>
+</view>
+<view class="list-container" wx:if="{{pois.length > 0}}">
+	<scroll-view class="poi-list" scroll-y="true">
+		<view class="list-item {{index == currentIndex ? 'active' : ''}}" wx:for="{{pois}}" wx:key="{{index}}" data-index="{{index}}" data-poi="{{item}}" bindtap="tapPoi">
+			<view class="item-title">
+				<text>{{item.title}}</text>
+			</view>
+			<view class="item-info">
+				<text class="item-address">{{item.address}}</text>
+			</view>
+		</view>
+	</scroll-view>
+</view>
+<view class="btn-ctrl">
+<button type="primary" block bindtap="startNav">开始导航</button>
+</view>
+</view>

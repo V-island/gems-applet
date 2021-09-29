@@ -3,3 +3,10 @@
     height: 100%;
     overflow: hidden;
 }
+
+.btn-ctrl{
+    position: absolute;
+    z-index: 999;
+    right: 20px;
+    top:20px;
+}
