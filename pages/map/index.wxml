@@ -2,13 +2,29 @@
 <BlueToothView wx:if="{{isOpenBluetooth == false }}" bind:onLeapfrog="onLeapfrog"></BlueToothView>
 <view class="container" wx:else>
     <!-- 加载地图容器 -->
-    <canvas type="webgl" id="fengMap" style="width: 100%; height: 100%;" disable-scroll bindtouchstart="touchStart" bindtouchmove="touchMove" bindtouchend="touchEnd">
+    <canvas type="webgl" id="fengMap" style="width: 100%; height: 100%;" disable-scroll bindtouchstart="touchStart"
+        bindtouchmove="touchMove" bindtouchend="touchEnd">
         <view class="btn-ctrl">
-        <button size="mini" bindtap="goToPage">导航</button>
+            <button size="mini" bindtap="goToPage">来园</button>
         </view>
         <!-- 楼层控件 -->
-        <FMScrollGroupsControl id="scrollGroupsControl" wx:if="{{mapLoaded == true }}" focusGroupID="{{focusGroupID}}" groupIDs="{{mapGroupIDs}}" allLayer="{{isAllLayer}}" showBtnCount="3" bind:switchGroup="switchGroup" bind:switchLayers="switchLayers" />
+        <FMScrollGroupsControl id="scrollGroupsControl" wx:if="{{mapLoaded == true }}" focusGroupID="{{focusGroupID}}"
+            groupIDs="{{mapGroupIDs}}" allLayer="{{isAllLayer}}" showBtnCount="3" bind:switchGroup="switchGroup"
+            bind:switchLayers="switchLayers" />
     </canvas>
     <!-- 2d画布 -->
     <canvas type="2d" id="temp"></canvas>
+    <!-- marker信息预览弹框 -->
+    <van-popup custom-class="popup-warpper" show="{{ isPopupShow }}" round closeable overlay="{{isPopupOverlay}}"
+        position="bottom" custom-style="height: 20%" bind:close="onClosePopup">
+        <view class="popup-body">
+            <text class="popup-title">{{markerInfo.name}}</text>
+            <van-tag round type="primary">{{markerInfo.groupID}}F</van-tag>
+        </view>
+        <van-divider />
+        <view class="popup-footer">
+            <van-button custom-class="button-route" icon="guide-o" round type="info" bind:click="onShowRoute">路线
+            </van-button>
+        </view>
+    </van-popup>
 </view>

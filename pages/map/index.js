@@ -16,21 +16,31 @@ Page({
     mapLoaded: false, //地图是否加载完成
     focusGroupID: 1,
     mapGroupIDs: [],
-    mapCenter: {
-      x: 114,
-      y: 22
-    },
+    markerInfo: {},
     is3D: true,
     isAllLayer: false,
     isOpenBluetooth: false,
+    isPopupShow: false,
+    isPopupOverlay: false,
+    hasMarker: true,
   },
   // 定义全局map变量
   fmap: null,
   location: null,
   //定义定位点marker
   locationMarker: null,
-  // 定位sdk实例
-  locSDK: null,
+  // 定义路径规划对象
+  naviAnalyser: null,
+  // 定义点击次数变量
+  clickCount: 0,
+  // 判断起点是否是同一处坐标
+  lastCoord: null,
+  // 起终点坐标
+  coords: [],
+  // 定义markert图层数组
+  layers: [],
+  // 定义导航marker
+  layer: null,
   onLoad: function (options) {
     const { id, mapId, name } = options
     this.setData({
@@ -64,9 +74,6 @@ Page({
     if (this.fmap) {
       this.fmap.dispose();
       this.fmap = null;
-    }
-    if (this.locSDK) {
-      this.locSDK.stopUpdateLocation();
     }
   },
   // 初始化蜂鸟地图
@@ -108,6 +115,9 @@ Page({
           // console.log(error);
         });
 
+        // fengmap.FMNaviAnalyser 是可分析最短路径、最快路径并返回分析结果的路径类
+        this.naviAnalyser = new fengmap.FMNaviAnalyser(this.fmap);
+
         //地图加载完成事件
         this.fmap.on('loadComplete', () => {
           console.log('地图加载完成');
@@ -128,83 +138,54 @@ Page({
          * 通过点击地图，获取位置坐标
          * */
         this.fmap.on('mapClickNode', (event) => {
-          console.log(event);
-          if (!event.nodeType) {
-            if (this.selectedModel) {
-              this.selectedModel.selected = false;
+          if (event.target && event.target.nodeType == fengmap.FMNodeType.MODEL && this.naviAnalyser) {
+            //封装点击坐标，模型中心点坐标
+            const coord = {
+              x: event.target.mapCoord.x,
+              y: event.target.mapCoord.y,
+              name: event.target.name,
+              groupID: event.target ? event.target.groupID : 1
+            };
+            console.log(coord)
+            this.setData({ markerInfo: coord, isPopupShow: true });
+            this.addImageMarker(coord);
+            return
+            //第一次点击
+            if (this.clickCount === 0) {
+              //记录点击坐标
+              this.lastCoord = coord;
+              //设置起点坐标
+              this.coords[0] = coord;
+
+              //添加起点imageMarker
+              this.addMarker(coord, 'start');
+            } else if (this.clickCount === 1) {
+              //第二次点击，添加终点并画路线
+              //判断起点和终点是否相同
+              if (this.lastCoord.x === coord.x && this.lastCoord.y === coord.y) {
+                return;
+              }
+
+              //设置终点坐标
+              this.coords[1] = coord;
+              //添加终点imageMarker
+              this.addMarker(coord, 'end');
+
+              //设置完起始点后，调用此方法画出导航线
+              this.drawNaviLine();
+            } else {
+              //第三次点击，重新开始选点进行路径规划
+              //重置路径规划
+              this.resetNaviRoute();
+
+              //记录点击坐标
+              this.lastCoord = coord;
+              //设置起点坐标
+              this.coords[0] = coord;
+              //添加起点imageMarker
+              this.addMarker(coord, 'start');
             }
-          }
-          //地图模型
-          const target = event.target;
-          if (!target) {
-            return;
-          }
-
-          let info = '';
-
-          //筛选点击类型,打印拾取信息
-          switch (target.nodeType) {
-            //地面模型
-            case fengmap.FMNodeType.FLOOR:
-              if (this.clickedPOI && event.eventInfo.eventID === this.eventID) return;
-              info = `地图位置坐标：x:${event.eventInfo.coord.x}，y:${event.eventInfo.coord.y}`;
-              if (this.selectedModel) {
-                this.selectedModel.selected = false;
-              }
-              //弹出信息框
-              wx.showModal({
-                title: '拾取对象类型：地图',
-                content: info,
-                showCancel: false,
-              })
-              break;
-
-              //model模型
-            case fengmap.FMNodeType.MODEL:
-              if (this.clickedPOI && event.eventInfo.eventID === this.eventID) {
-                this.clickedPOI = false;
-                return;
-              }
-              //过滤类型为墙的model
-              if (target.typeID === 300000) {
-                //其他操作
-                return;
-              }
-              info = `FID：${target.FID}
-                model中心点坐标：x: ${target.mapCoord.x}，y:${target.mapCoord.y}
-                地图位置坐标：x: ${event.eventInfo.coord.x}，y:${event.eventInfo.coord.y}`
-
-              //模型高亮
-              if (this.selectedModel && this.selectedModel.FID != target.FID) {
-                this.selectedModel.selected = false;
-              }
-              target.selected = true;
-              this.selectedModel = target;
-
-              //弹出信息框
-              wx.showModal({
-                title: '拾取对象类型：模型',
-                content: info,
-                showCancel: false,
-              })
-              break;
-
-              //公共设施、图片标注模型
-            case fengmap.FMNodeType.FACILITY:
-            case fengmap.FMNodeType.IMAGE_MARKER:
-              this.clickedPOI = true;
-              this.eventID = event.eventInfo.eventID;
-              info = `地图位置坐标：x: ${event.eventInfo.coord.x}，y: ${event.eventInfo.coord.y}`;
-              if (this.selectedModel) {
-                this.selectedModel.selected = false;
-              }
-              //弹出信息框
-              wx.showModal({
-                title: '拾取对象类型：公共设施',
-                content: info,
-                showCancel: false,
-              })
-              break;
+            this.clickCount++;
           }
         })
 
@@ -218,7 +199,6 @@ Page({
         };
       })
     })
-
     // 通过蓝牙获取实时定位
     wx.openBluetoothAdapter({
       success: function (res) {
@@ -253,46 +233,6 @@ Page({
       ...e,
       type: 'touchend'
     })
-  },
-  // 添加本地定位Marker
-  addOrMoveLocationMarker({xaxis, yaxis, floor, angle}) {
-    if (!this.locationMarker) {
-      /**
-       * fengmap.FMLocationMarker 自定义图片标注对象，为自定义图层
-       */
-      this.locationMarker = new fengmap.FMLocationMarker(this.fmap, {
-        //x坐标值
-        x: xaxis,
-        //y坐标值
-        y: yaxis,
-        //图片地址
-        url: '../../images/location.png',
-        //楼层id
-        groupID: floor,
-        //图片尺寸
-        size: 30,
-        //marker标注高度
-        height: 3,
-        callback: function () {
-          //回调函数
-          console.log('定位点marker加载完成！');
-        }
-      });
-      //添加定位点marker
-      this.fmap.addLocationMarker(this.locationMarker);
-    } else {
-      //旋转locationMarker
-      this.locationMarker.rotateTo({
-        to: angle,
-        duration: 1
-      });
-      //移动locationMarker
-      this.locationMarker.moveTo({
-        x: xaxis,
-        y: yaxis,
-        groupID: floor
-      });
-    }
   },
   // 显示指北针
   showCompass() {
@@ -354,8 +294,81 @@ Page({
     // 初始化地图
     this.initFengMap();
   },
+  // 关闭marker弹框
+  onClosePopup: function() {
+    this.setData({ markerInfo: {}, isPopupShow: false });
+  },
+  // 初始化导航
+  onShowRoute: function() {
+    
+  },
+  // 添加本地定位Marker
+  // fengmap.FMLocationMarker 自定义图片标注对象，为自定义图层
+  addOrMoveLocationMarker({xaxis, yaxis, floor, angle}) {
+    if (!this.locationMarker) {
+      // fengmap.FMLocationMarker 自定义图片标注对象，为自定义图层
+      this.locationMarker = new fengmap.FMLocationMarker(this.fmap, {
+        //x坐标值
+        x: xaxis,
+        //y坐标值
+        y: yaxis,
+        //图片地址
+        url: '../../images/location.png',
+        //楼层id
+        groupID: floor,
+        //图片尺寸
+        size: 30,
+        //marker标注高度
+        height: 3,
+        callback: function () {
+          //回调函数
+          console.log('定位点marker加载完成！');
+        }
+      });
+      //添加定位点marker
+      this.fmap.addLocationMarker(this.locationMarker);
+    } else {
+      //旋转locationMarker
+      this.locationMarker.rotateTo({
+        to: angle,
+        duration: 1
+      });
+      //移动locationMarker
+      this.locationMarker.moveTo({
+        x: xaxis,
+        y: yaxis,
+        groupID: floor
+      });
+    }
+  },
+  // fengmap.FMImageMarker 自定义图片标注对象，为自定义图层
+  addImageMarker(coord) {
+    if (this.layer) {
+      this.layer.removeAll();
+    }
+
+    //获取当前聚焦楼层
+    const group = this.fmap.getFMGroup(this.fmap.focusGroupID);
+    this.layer = group.getOrCreateLayer('imageMarker');
+    this.im = new fengmap.FMImageMarker(this.fmap, {
+      //标注x坐标点
+      x: coord.x,
+      //标注y坐标点
+      y: coord.y,
+      //设置图片路径
+      url: '../../images/blueImageMarker.png',
+      //设置图片显示尺寸
+      size: 32,
+      //标注高度，大于model的高度
+      height: 4
+    });
+    // imageMarker添加自定义属性
+    this.im.selfAttr = '当前选中位置';
+
+    this.layer.addMarker(this.im);
+  },
   ///////////////////////////////////////////////
-  //楼层控件回调事件(end)
+  //系统统一回调事件(end)
   //////////////////////////////////////////////
 
   ///////////////////////////////////////////////

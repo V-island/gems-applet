@@ -2,6 +2,11 @@
   "navigationBarTitleText": "星火源",
   "usingComponents": {
     "FMScrollGroupsControl": "../../component/FMScrollGroupsControl/FMScrollGroupsControl",
-    "BlueToothView": "../../component/BlueToothView"
+    "BlueToothView": "../../component/BlueToothView",
+    "NavigationModel": "../../component/NavigationModel",
+    "van-popup": "@vant/weapp/popup/index",
+    "van-divider": "@vant/weapp/divider/index",
+    "van-button": "@vant/weapp/button/index",
+    "van-tag": "@vant/weapp/tag/index"
   }
 }
