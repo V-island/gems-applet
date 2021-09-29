@@ -1,12 +1,4 @@
 <!--component/NavigationModel/index.wxml-->
-<van-popup custom-class="popup-warpper" show="{{ isPopupShow }}" round closeable overlay="{{isPopupOverlay}}"
-  position="bottom" custom-style="height: 20%" bind:close="onClosePopup">
-  <view class="popup-body">
-    <text class="popup-title">{{markerInfo.name}}</text>
-    <van-tag round type="primary">{{markerInfo.groupID}}F</van-tag>
-  </view>
-  <van-divider />
-  <view class="popup-footer">
-    <van-button custom-class="button-route" icon="guide-o" round type="info" bind:click="onShowRoute">路线</van-button>
-  </view>
-</van-popup>
+<view class="model-groups">
+  
+</view>

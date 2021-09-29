@@ -1,19 +1,10 @@
 /* component/NavigationModel/index.wxss */
-.popup-warpper{
-  padding: 30rpx 30rpx 0;
-  box-shadow: 0 0 10rpx #999;
-}
-.popup-body{
-  display: flex;
-  flex-direction: column;
-}
-.popup-footer{
-  text-align: right;
-}
-.popup-title{
-  margin-bottom: 10rpx;
-}
-.button-route{
-  width: 40rpx;
-  padding: 0;
+.model-groups {
+  width: 100%;
+  position: absolute;
+  background-color: white;
+  box-shadow: rgba(0, 0, 0, 0.3) 4rpx 4rpx 6rpx;
+  border-radius: 4rpx;
+  top: 0;
+  left: 0;
 }

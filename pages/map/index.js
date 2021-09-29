@@ -23,6 +23,7 @@ Page({
     isPopupShow: false,
     isPopupOverlay: false,
     hasMarker: true,
+    isNaviRoute: false,
   },
   // 定义全局map变量
   fmap: null,
@@ -39,8 +40,6 @@ Page({
   coords: [],
   // 定义markert图层数组
   layers: [],
-  // 定义导航marker
-  layer: null,
   onLoad: function (options) {
     const { id, mapId, name } = options
     this.setData({
@@ -146,46 +145,12 @@ Page({
               name: event.target.name,
               groupID: event.target ? event.target.groupID : 1
             };
-            console.log(coord)
-            this.setData({ markerInfo: coord, isPopupShow: true });
-            this.addImageMarker(coord);
-            return
-            //第一次点击
-            if (this.clickCount === 0) {
-              //记录点击坐标
-              this.lastCoord = coord;
-              //设置起点坐标
-              this.coords[0] = coord;
-
-              //添加起点imageMarker
-              this.addMarker(coord, 'start');
-            } else if (this.clickCount === 1) {
-              //第二次点击，添加终点并画路线
-              //判断起点和终点是否相同
-              if (this.lastCoord.x === coord.x && this.lastCoord.y === coord.y) {
-                return;
-              }
-
-              //设置终点坐标
-              this.coords[1] = coord;
-              //添加终点imageMarker
-              this.addMarker(coord, 'end');
-
-              //设置完起始点后，调用此方法画出导航线
-              this.drawNaviLine();
-            } else {
-              //第三次点击，重新开始选点进行路径规划
-              //重置路径规划
-              this.resetNaviRoute();
-
-              //记录点击坐标
-              this.lastCoord = coord;
-              //设置起点坐标
-              this.coords[0] = coord;
-              //添加起点imageMarker
-              this.addMarker(coord, 'start');
+            if(this.data.isNaviRoute){
+              this.initNaviRoute(coord)
+            }else{
+              this.setData({ markerInfo: coord, isPopupShow: true });
+              this.addImageMarker(coord);
             }
-            this.clickCount++;
           }
         })
 
@@ -300,7 +265,49 @@ Page({
   },
   // 初始化导航
   onShowRoute: function() {
-    
+    this.setData({
+      isNaviRoute: true,
+      isPopupShow: false
+    })
+    this.addImageMarker(this.data.markerInfo)
+  },
+  initNaviRoute: function(coord) {
+    //第一次点击
+    if (this.clickCount === 0) {
+      //记录点击坐标
+      this.lastCoord = coord;
+      //设置起点坐标
+      this.coords[0] = coord;
+
+      //添加起点imageMarker
+      this.addMarker(coord, 'start');
+    } else if (this.clickCount === 1) {
+      //第二次点击，添加终点并画路线
+      //判断起点和终点是否相同
+      if (this.lastCoord.x === coord.x && this.lastCoord.y === coord.y) {
+        return;
+      }
+
+      //设置终点坐标
+      this.coords[1] = coord;
+      //添加终点imageMarker
+      this.addMarker(coord, 'end');
+
+      //设置完起始点后，调用此方法画出导航线
+      this.drawNaviLine();
+    } else {
+      //第三次点击，重新开始选点进行路径规划
+      //重置路径规划
+      this.resetNaviRoute();
+
+      //记录点击坐标
+      this.lastCoord = coord;
+      //设置起点坐标
+      this.coords[0] = coord;
+      //添加起点imageMarker
+      this.addMarker(coord, 'start');
+    }
+    this.clickCount++;
   },
   // 添加本地定位Marker
   // fengmap.FMLocationMarker 自定义图片标注对象，为自定义图层
@@ -342,30 +349,125 @@ Page({
     }
   },
   // fengmap.FMImageMarker 自定义图片标注对象，为自定义图层
-  addImageMarker(coord) {
-    if (this.layer) {
-      this.layer.removeAll();
+  addImageMarker(coord, type) {
+    // 当不为导航时，移除其他marker
+    if (this.layers.length > 0 && !this.data.isNaviRoute) {
+      this.layers[0].removeAll();
     }
-
-    //获取当前聚焦楼层
-    const group = this.fmap.getFMGroup(this.fmap.focusGroupID);
-    this.layer = group.getOrCreateLayer('imageMarker');
-    this.im = new fengmap.FMImageMarker(this.fmap, {
-      //标注x坐标点
+    //获取目标点层
+    let group = this.fmap.getFMGroup(coord.groupID);
+    //创建marker，返回当前层中第一个imageMarkerLayer,如果没有，则自动创建
+    let layer = group.getOrCreateLayer('imageMarker');
+    //判断该楼层layer是否存在，清除marker时需要将所有楼层marker都清除
+    let isExistLayer = this.layers.some(function (item, index, array) {
+      return item.groupID === coord.groupID;
+    });
+    if (!isExistLayer) {
+      this.layers.push(layer);
+    }
+    console.log(layer)
+    let markerUrl = '';
+    switch (type) {
+      case 'start':
+        markerUrl = '../../images/start.png';
+        break;
+      case 'end':
+        markerUrl = '../../images/end.png';
+        break;
+      default:
+        markerUrl = '../../images/blueImageMarker.png';
+        break;
+    }
+    //图标标注对象，默认位置为该楼层中心点
+    let im = new fengmap.FMImageMarker(this.fmap, {
       x: coord.x,
-      //标注y坐标点
       y: coord.y,
       //设置图片路径
-      url: '../../images/blueImageMarker.png',
+      url: markerUrl,
       //设置图片显示尺寸
       size: 32,
-      //标注高度，大于model的高度
+      //marker标注高度
       height: 4
     });
-    // imageMarker添加自定义属性
-    this.im.selfAttr = '当前选中位置';
+    //添加imageMarker
+    layer.addMarker(im);
+  },
+  // 画导航线
+  drawNaviLine() {
+    //根据已加载的fengmap.FMMap导航分析，判断路径规划是否成功
+    const analyzeNaviResult = this.naviAnalyser.analyzeNavi(this.coords[0].groupID, this.coords[0], this.coords[1].groupID, this.coords[1], fengmap.FMNaviMode.MODULE_SHORTEST);
+    if (fengmap.FMRouteCalcuResult.ROUTE_SUCCESS != analyzeNaviResult) {
+      return;
+    }
+    //获取路径分析结果对象，所有路线集合
+    let results = this.naviAnalyser.getNaviResults();
+    //初始化线图层
+    let line = new fengmap.FMLineMarker();
+    for (let i = 0; i < results.length; i++) {
+      let result = results[i];
+      //楼层id
+      let gid = result.groupId;
+      //路径线点集合
+      let points = result.getPointList();
 
-    this.layer.addMarker(this.im);
+      let points3d = [];
+      points.forEach(function (point) {
+        points3d.push({
+          //x坐标点
+          'x': point.x,
+          //y坐标点
+          'y': point.y,
+          //线标注高度
+          'z': 1
+        });
+      });
+
+      /**
+       * fengmap.FMSegment点集，一个点集代表一条折线
+       */
+      let seg = new fengmap.FMSegment();
+      seg.groupId = gid;
+      seg.points = points3d;
+      line.addSegment(seg);
+    }
+    //配置线型、线宽、透明度等
+    let lineStyle = {
+      //设置线的宽度
+      lineWidth: 6,
+      //设置线的透明度
+      alpha: 0.8,
+      //设置线的类型为导航线
+      lineType: fengmap.FMLineType.FMARROW,
+      //设置线动画,false为动画
+      noAnimate: true
+    };
+    //画线
+    this.fmap.drawLineMark(line, lineStyle);
+  },
+  // 重置路径规划
+  resetNaviRoute() {
+    //清空导航线
+    this.clearNaviLine();
+    //清空起点、终点marker
+    this.deleteMarker();
+    //重置地图点击次数
+    this.clickCount = 0;
+    //重置上一次点击坐标对象
+    this.lastCoord = null;
+  },
+  // 清空导航线
+  clearNaviLine() {
+    //清空导航线
+    this.fmap.clearLineMark();
+  },
+  // 清空图片marker事件
+  deleteMarker() {
+    //删除layer上所有Marker
+    this.layers.forEach(function (layer, index) {
+      if (layer) {
+        layer.removeAll();
+      }
+    });
   },
   ///////////////////////////////////////////////
   //系统统一回调事件(end)

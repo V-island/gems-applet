@@ -4,7 +4,8 @@
     <!-- 加载地图容器 -->
     <canvas type="webgl" id="fengMap" style="width: 100%; height: 100%;" disable-scroll bindtouchstart="touchStart"
         bindtouchmove="touchMove" bindtouchend="touchEnd">
-        <view class="btn-ctrl">
+        <!-- 来园控件 -->
+        <view wx:if="{{isPopupShow == false }}" class="btn-ctrl">
             <button size="mini" bindtap="goToPage">来园</button>
         </view>
         <!-- 楼层控件 -->
@@ -27,4 +28,5 @@
             </van-button>
         </view>
     </van-popup>
+    <!-- <NavigationModel /> -->
 </view>
