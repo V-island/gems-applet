@@ -149,6 +149,7 @@ Page({
               this.initNaviRoute(coord)
             }else{
               this.setData({ markerInfo: coord, isPopupShow: true });
+              this.deleteMarker()
               this.addImageMarker(coord);
             }
           }
@@ -269,7 +270,8 @@ Page({
       isNaviRoute: true,
       isPopupShow: false
     })
-    this.addImageMarker(this.data.markerInfo)
+    this.deleteMarker()
+    this.addImageMarker(this.data.markerInfo, 'end')
   },
   initNaviRoute: function(coord) {
     //第一次点击
@@ -280,32 +282,29 @@ Page({
       this.coords[0] = coord;
 
       //添加起点imageMarker
-      this.addMarker(coord, 'start');
+      this.addImageMarker(coord, 'start');
     } else if (this.clickCount === 1) {
       //第二次点击，添加终点并画路线
       //判断起点和终点是否相同
       if (this.lastCoord.x === coord.x && this.lastCoord.y === coord.y) {
         return;
       }
-
       //设置终点坐标
       this.coords[1] = coord;
       //添加终点imageMarker
-      this.addMarker(coord, 'end');
-
+      this.addImageMarker(coord, 'end');
       //设置完起始点后，调用此方法画出导航线
       this.drawNaviLine();
     } else {
       //第三次点击，重新开始选点进行路径规划
       //重置路径规划
       this.resetNaviRoute();
-
       //记录点击坐标
       this.lastCoord = coord;
       //设置起点坐标
       this.coords[0] = coord;
       //添加起点imageMarker
-      this.addMarker(coord, 'start');
+      this.addImageMarker(coord, 'start');
     }
     this.clickCount++;
   },
@@ -350,10 +349,6 @@ Page({
   },
   // fengmap.FMImageMarker 自定义图片标注对象，为自定义图层
   addImageMarker(coord, type) {
-    // 当不为导航时，移除其他marker
-    if (this.layers.length > 0 && !this.data.isNaviRoute) {
-      this.layers[0].removeAll();
-    }
     //获取目标点层
     let group = this.fmap.getFMGroup(coord.groupID);
     //创建marker，返回当前层中第一个imageMarkerLayer,如果没有，则自动创建
@@ -365,7 +360,6 @@ Page({
     if (!isExistLayer) {
       this.layers.push(layer);
     }
-    console.log(layer)
     let markerUrl = '';
     switch (type) {
       case 'start':
@@ -399,6 +393,7 @@ Page({
     if (fengmap.FMRouteCalcuResult.ROUTE_SUCCESS != analyzeNaviResult) {
       return;
     }
+    console.log('this.coords', this.coords)
     //获取路径分析结果对象，所有路线集合
     let results = this.naviAnalyser.getNaviResults();
     //初始化线图层
