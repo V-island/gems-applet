@@ -2,7 +2,6 @@
 import {
   fengmap
 } from '../../utils/fengmap.miniprogram.min.js';
-import LocSDK from '../../utils/locSDK';
 
 // 获取应用实例
 const app = getApp()
@@ -13,6 +12,7 @@ Page({
     placeId: '',
     fmapID: '',
     appName: '',
+    deviceList: '',
     mapLoaded: false, //地图是否加载完成
     focusGroupID: 1,
     mapGroupIDs: [],
@@ -48,21 +48,11 @@ Page({
         })
         // 初始化地图
         that.initFengMap();
-        // 项目相关设备列表
-        util.getDevices(id, function (res) {
-          console.log(res)
-          //开始搜索附近的蓝牙设备
-          setInterval(that.getDevicesDiscovery(res || []), 1000);
-        })
       },
       fail: function (res) {
         console.info('没有打开蓝牙适配器');
         that.setData({
           isOpenBluetooth: false
-        })
-        // 项目相关设备列表
-        util.getDevices(id, function (res) {
-          console.log(res)
         })
       }
     })
@@ -81,6 +71,7 @@ Page({
   },
   // 初始化蜂鸟地图
   initFengMap: function () {
+    var that = this;
     // 获取canvas
     wx.createSelectorQuery().select('#fengMap').node().exec((res) => {
       const canvas = res[0].node;
@@ -228,14 +219,19 @@ Page({
       })
     })
 
-    // // 初始化定位sdk
-    // this.locSDK = new LocSDK();
-    // // 实时定位
-    // this.locSDK.updateLocation((data) => {
-    //   if (this.data.mapLoaded) {
-    //     this.addOrMoveLocationMarker(data)
-    //   }
-    // })
+    // 通过蓝牙获取实时定位
+    wx.openBluetoothAdapter({
+      success: function (res) {
+        // 项目相关设备列表
+        util.getDevices(that.data.placeId, function (res) {
+          that.setData({
+            deviceList: res || []
+          })
+          //开始搜索附近的蓝牙设备
+          setInterval(that.getDevicesDiscovery, 1000);
+        })
+      }
+    })
   },
   // 手指触摸动作开始
   touchStart(e) {
@@ -259,20 +255,20 @@ Page({
     })
   },
   // 添加本地定位Marker
-  addOrMoveLocationMarker(data) {
+  addOrMoveLocationMarker({xaxis, yaxis, floor, angle}) {
     if (!this.locationMarker) {
       /**
        * fengmap.FMLocationMarker 自定义图片标注对象，为自定义图层
        */
       this.locationMarker = new fengmap.FMLocationMarker(this.fmap, {
         //x坐标值
-        x: data.x,
+        x: xaxis,
         //y坐标值
-        y: data.y,
+        y: yaxis,
         //图片地址
         url: '../../images/location.png',
         //楼层id
-        groupID: 1,
+        groupID: floor,
         //图片尺寸
         size: 30,
         //marker标注高度
@@ -287,14 +283,14 @@ Page({
     } else {
       //旋转locationMarker
       this.locationMarker.rotateTo({
-        to: data.angle,
+        to: angle,
         duration: 1
       });
       //移动locationMarker
       this.locationMarker.moveTo({
-        x: data.x,
-        y: data.y,
-        groupID: 1
+        x: xaxis,
+        y: yaxis,
+        groupID: floor
       });
     }
   },
@@ -321,25 +317,24 @@ Page({
   //系统统一回调事件(start)
   //////////////////////////////////////////////
   // 搜索附近的蓝牙设备
-  getDevicesDiscovery: function (deviceList) {
+  getDevicesDiscovery: function () {
     var that = this;
     wx.startBluetoothDevicesDiscovery({
       success: function (res) {
         //获取在蓝牙模块生效期间所有已发现的蓝牙设备
         wx.getBluetoothDevices({
           success: function (res) {
-            console.log(res)
             //定义一个对象数组来接收Beacon的信息
-            let arrayIBeaconInfo = res.devices.filter(devices => deviceList.some(item => devices.deviceId === item));
+            let arrayIBeaconInfo = res.devices.filter(devices => that.data.deviceList.some(item => devices.deviceId === item));
             let iBeaconInfo = arrayIBeaconInfo.map(item => {
               return `${item.deviceId},${item.RSSI}`
             })
-            console.log(arrayIBeaconInfo)
-            console.log(iBeaconInfo)
-            //将对象存入data中的全局变量Beacon中
-            that.setData({
-              Beacon: iBeaconInfo.join(';'),
-            })
+            if(iBeaconInfo.length > 0)
+              util.getLocation(iBeaconInfo.join(';'), function (location) {
+                wx.onCompassChange((res)=>{
+                  that.addOrMoveLocationMarker({...location, angle: res.direction})
+                })
+              })
           },
           fail: function (res) {
             console.log("获取蓝牙设备失败！");

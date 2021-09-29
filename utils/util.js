@@ -139,10 +139,10 @@ function getDevices(id, fn) {
  * params fn 回调函数
  * return fn 回调函数
  */
-function getRooms(params, fn) {
+function getRooms(req, fn) {
   var _self = this;
   _self.checkLogin(function (res) {
-    _self.request('GET', params, `ma/rooms`, contentType, res.token, function (res) {
+    _self.request('GET', {req}, `ma/rooms`, contentType, res.token, function (res) {
       return typeof fn == 'function' && fn(res.data);
     })
   })
@@ -155,7 +155,7 @@ function getRooms(params, fn) {
 function getLocation(params, fn) {
   var _self = this;
   _self.checkLogin(function (res) {
-    _self.request('GET', params, `ma/location`, contentType, res.token, function (res) {
+    _self.request('GET', {req: params}, `ma/location`, contentType, res.token, function (res) {
       return typeof fn == 'function' && fn(res.data);
     })
   })
