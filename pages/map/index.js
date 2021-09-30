@@ -24,7 +24,7 @@ Page({
     prompt: '',
     naviStoped: false,  //导航是否结束
     markerInfo: {},
-    is3D: true,
+    is3D: false,
     isAllLayer: false,
     isOpenBluetooth: false,
     isPopupShow: false,
@@ -125,8 +125,6 @@ Page({
           compassOffset: [40, 40],
           // 设置指南针大小
           compassSize: 36,
-          // 初始化地图中心点坐标
-          // defaultViewCenter: {x:12961580.734922647,y:4861883.567717729},
           // 地图应用名称p
           appName: this.data.appName,
           // 地图应用密钥
@@ -174,7 +172,7 @@ Page({
               groupID: event.target ? event.target.groupID : 1
             };
             if(this.data.isNaviRoute){
-              if(this.coords.length == 2){
+              if(this.coords.length == 2 && this.firstCoord && this.lastCoord){
                 //重置路径规划
                 this.resetNaviRoute();
                 this.coords = []
@@ -271,6 +269,7 @@ Page({
             if(iBeaconInfo.length > 0)
               util.getLocation(iBeaconInfo.join(';'), function (location) {
                 wx.onCompassChange((res)=>{
+                  // console.log(location)
                   that.addOrMoveLocationMarker({...location, angle: res.direction})
                 })
               })
@@ -328,8 +327,8 @@ Page({
       this.addImageMarker(coord, 'end');
     }
     // //设置完起始点后，调用此方法画出导航线
-    if(this.coords.length == 2){
-      this.drawNaviLine();
+    if(this.coords.length == 2 && this.firstCoord && this.lastCoord){
+      this.createNavi(this.coords);
     }
   },
   // 添加本地定位Marker
@@ -358,6 +357,7 @@ Page({
       //添加定位点marker
       this.fmap.addLocationMarker(this.locationMarker);
     } else {
+      // console.log('现在开始移动', {xaxis, yaxis})
       //旋转locationMarker
       this.locationMarker.rotateTo({
         to: angle,
@@ -521,7 +521,8 @@ Page({
       y: coords[0].y,
       groupID: coords[0].groupID,
       url: '../../images/start.png',
-      size: 32
+      size: 32,
+      height: 4
     });
 
     //添加终点
@@ -530,14 +531,15 @@ Page({
       y: coords[1].y,
       groupID: coords[1].groupID,
       url: '../../images/end.png',
-      size: 32
+      size: 32,
+      height: 4
     });
 
     // 画出导航线
     this.navi.drawNaviLine();
 
     //解析定位点数据
-    this.analyseLocationData(0);
+    // this.analyseLocationData(0);
 
     //监听导航事件
     this.navi.on('walking', (data) => {
