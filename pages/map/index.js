@@ -16,6 +16,13 @@ Page({
     mapLoaded: false, //地图是否加载完成
     focusGroupID: 1,
     mapGroupIDs: [],
+    expand: true, //展开控件
+    enableExpand: true, //是否允许展开控件操作
+    distance: 0,
+    minutes: 0,
+    seconds: 0,
+    prompt: '',
+    naviStoped: false,  //导航是否结束
     markerInfo: {},
     is3D: true,
     isAllLayer: false,
@@ -24,6 +31,7 @@ Page({
     isPopupOverlay: false,
     hasMarker: true,
     isNaviRoute: false,
+    isStartNavi: false
   },
   // 定义全局map变量
   fmap: null,
@@ -32,14 +40,36 @@ Page({
   locationMarker: null,
   // 定义路径规划对象
   naviAnalyser: null,
-  // 定义点击次数变量
-  clickCount: 0,
   // 判断起点是否是同一处坐标
+  firstCoord: null,
   lastCoord: null,
   // 起终点坐标
   coords: [],
   // 定义markert图层数组
   layers: [],
+  // 导航
+  // 导航前地图缩放比例
+  startNaviScaleLevel: 20,
+  // 导航过程中地图缩放比例
+  naviScaleLevel: 22,
+  // 导航对象
+  navi: null,
+  // 导航开关
+  naviSwitch: true,
+  // 距离终点的最大距离，结束导航 单位：米
+  maxEndDistance: 5,
+  // 路径偏移的最大距离，单位：米
+  maxOffsetDis: 15,
+  // 路径偏移的最小距离，在最小距离以内坐标点自动约束到路径线上
+  minOffsetDis: 3,
+  // 路径线真实坐标点数据
+  coordsData: [],
+  //定位点下标
+  coordIndex: 0,
+  // 当前定位点原始坐标
+  currentCoord: null,
+  // 导航请求定位点定时器
+  naviInt: null,
   onLoad: function (options) {
     const { id, mapId, name } = options
     this.setData({
@@ -89,8 +119,6 @@ Page({
           canvas: canvas,
           // 必要，2d画布
           tempCanvas: tmpCanvas,
-          // 地图默认旋转角度
-          defaultControlsPose: 90,
           // 初始二维/三维状态,默认3D显示
           defaultViewMode: this.data.is3D ? fengmap.FMViewMode.MODE_3D : fengmap.FMViewMode.MODE_2D,
           // 设置初始指南针的偏移量
@@ -125,8 +153,8 @@ Page({
             mapLoaded: true
           })
 
-          // 设置楼层数据
-          this.loadScrollFloorCtrl();
+          //加载楼层切换控件
+          this.initFloorControl();
 
           // 显示指北针
           this.showCompass();
@@ -146,6 +174,11 @@ Page({
               groupID: event.target ? event.target.groupID : 1
             };
             if(this.data.isNaviRoute){
+              if(this.coords.length == 2){
+                //重置路径规划
+                this.resetNaviRoute();
+                this.coords = []
+              }
               this.initNaviRoute(coord)
             }else{
               this.setData({ markerInfo: coord, isPopupShow: true });
@@ -271,42 +304,33 @@ Page({
       isPopupShow: false
     })
     this.deleteMarker()
-    this.addImageMarker(this.data.markerInfo, 'end')
+
+    //添加终点imageMarker
+    this.initNaviRoute(this.data.markerInfo, true);
   },
-  initNaviRoute: function(coord) {
-    //第一次点击
-    if (this.clickCount === 0) {
+  onCloseRoute: function() {
+    this.setData({ isNaviRoute: false, isNaviRoute: true });
+  },
+  initNaviRoute: function(coord, last) {
+    if(!this.firstCoord && !last){
       //记录点击坐标
-      this.lastCoord = coord;
+      this.firstCoord = coord;
       //设置起点坐标
       this.coords[0] = coord;
-
       //添加起点imageMarker
       this.addImageMarker(coord, 'start');
-    } else if (this.clickCount === 1) {
-      //第二次点击，添加终点并画路线
-      //判断起点和终点是否相同
-      if (this.lastCoord.x === coord.x && this.lastCoord.y === coord.y) {
-        return;
-      }
+    }else if(!this.lastCoord){
+      //记录点击坐标
+      this.lastCoord = coord;
       //设置终点坐标
       this.coords[1] = coord;
       //添加终点imageMarker
       this.addImageMarker(coord, 'end');
-      //设置完起始点后，调用此方法画出导航线
-      this.drawNaviLine();
-    } else {
-      //第三次点击，重新开始选点进行路径规划
-      //重置路径规划
-      this.resetNaviRoute();
-      //记录点击坐标
-      this.lastCoord = coord;
-      //设置起点坐标
-      this.coords[0] = coord;
-      //添加起点imageMarker
-      this.addImageMarker(coord, 'start');
     }
-    this.clickCount++;
+    // //设置完起始点后，调用此方法画出导航线
+    if(this.coords.length == 2){
+      this.drawNaviLine();
+    }
   },
   // 添加本地定位Marker
   // fengmap.FMLocationMarker 自定义图片标注对象，为自定义图层
@@ -390,10 +414,10 @@ Page({
   drawNaviLine() {
     //根据已加载的fengmap.FMMap导航分析，判断路径规划是否成功
     const analyzeNaviResult = this.naviAnalyser.analyzeNavi(this.coords[0].groupID, this.coords[0], this.coords[1].groupID, this.coords[1], fengmap.FMNaviMode.MODULE_SHORTEST);
+    console.log(analyzeNaviResult, fengmap.FMRouteCalcuResult.ROUTE_SUCCESS)
     if (fengmap.FMRouteCalcuResult.ROUTE_SUCCESS != analyzeNaviResult) {
       return;
     }
-    console.log('this.coords', this.coords)
     //获取路径分析结果对象，所有路线集合
     let results = this.naviAnalyser.getNaviResults();
     //初始化线图层
@@ -439,17 +463,6 @@ Page({
     //画线
     this.fmap.drawLineMark(line, lineStyle);
   },
-  // 重置路径规划
-  resetNaviRoute() {
-    //清空导航线
-    this.clearNaviLine();
-    //清空起点、终点marker
-    this.deleteMarker();
-    //重置地图点击次数
-    this.clickCount = 0;
-    //重置上一次点击坐标对象
-    this.lastCoord = null;
-  },
   // 清空导航线
   clearNaviLine() {
     //清空导航线
@@ -467,13 +480,314 @@ Page({
   ///////////////////////////////////////////////
   //系统统一回调事件(end)
   //////////////////////////////////////////////
+  ///////////////////////////////////////////////
+  //导航回调事件(start)
+  //////////////////////////////////////////////
+  /**
+   * 创建导航
+   * fengmap.FMNavigation 导航相关的控制类,封装了自动设置起始点标注，路径分析，模拟导航，导航动画的功能。
+   */
+  createNavi(coords) {
+    if (!this.navi) {
+      //初始化导航对象
+      this.navi = new fengmap.FMNavigation({
+        //地图对象
+        map: this.fmap,
+        //导航结果文字描述内容的语言类型参数, 目前支持中英文。参考FMLanguaeType。
+        naviLanguage: fengmap.FMLanguageType.ZH,
+        //导航中路径规划模式, 支持最短路径、最优路径两种。默认为MODULE_SHORTEST, 最短路径。
+        naviMode: fengmap.FMNaviMode.MODULE_SHORTEST,
+        //导航中的路线规划梯类优先级, 默认为PRIORITY_DEFAULT, 详情参考FMNaviPriority。
+        naviPriority: fengmap.FMNaviPriority.PRIORITY_DEFAULT,
+        //调用drawNaviLine绘制导航线时, 是否清除上次调用drawNaviLine绘制的导航线, 默认为true
+        autoClearNaviLine: true,
+        //导航线与楼层之间的高度偏移设置。默认是1。
+        lineMarkerHeight: 1.5,
+        // 设置导航线的样式
+        lineStyle: {
+          // 导航线样式
+          lineType: fengmap.FMLineType.FMARROW,
+          // 设置线的宽度
+          lineWidth: 6,
+          //设置线动画,false为动画
+          noAnimate: true
+        }
+      });
+    }
+
+    //添加起点
+    this.navi.setStartPoint({
+      x: coords[0].x,
+      y: coords[0].y,
+      groupID: coords[0].groupID,
+      url: '../../images/start.png',
+      size: 32
+    });
+
+    //添加终点
+    this.navi.setEndPoint({
+      x: coords[1].x,
+      y: coords[1].y,
+      groupID: coords[1].groupID,
+      url: '../../images/end.png',
+      size: 32
+    });
+
+    // 画出导航线
+    this.navi.drawNaviLine();
+
+    //解析定位点数据
+    this.analyseLocationData(0);
+
+    //监听导航事件
+    this.navi.on('walking', (data) => {
+
+      /**
+       * 当定位点偏离路径线大于约定的最大偏移距离时，进行路径重新规划
+       */
+      if (data.distance > this.minOffsetDis) {
+        //在最小和最大偏移距离之间，坐标点用原始定位坐标
+        data.point = this.currentCoord;
+      }
+
+      //更新导航信息
+      this.setNaviDescriptions(data);
+
+      //更新定位图标的位置及旋转角度
+      this.setLocationMakerPosition(data.point, data.angle);
+      if (data.distance > this.maxOffsetDis) {
+        console.log('路径偏移，重新规划路线');
+        clearTimeout(this.naviInt);
+        //重新设置起终点坐标，画路径线，重新开始导航
+        this.resetNaviRoute(data.point);
+        return;
+      }
+
+      /**
+       * 当剩余距离小于设置的距离终点的最小距离时，自动结束导航
+       */
+      if (data.remain < this.maxEndDistance || data.remain == 0) {
+        console.log('距离小于设置的距离终点的最小距离，导航自动结束');
+        //结束导航
+        this.stopNavi();
+        this.setData({
+          naviStoped: true
+        })
+        return;
+      }
+    });
+  },
+
+  /**
+   * 定位点数据解析，模拟数据点
+   * 真实项目中应该通过定位接口进行实时定位
+   * firstRoute:路径偏移前定位点集合
+   * seconedRoute:路径偏移后重新路径规划定位点集合
+   */
+  analyseLocationData(type) {
+    if (type === 0) {
+      //第一条路径线模拟坐标点
+      this.coordsData = locationCoords['firstRoute'];
+    } else {
+      //重新规划后路径线模拟坐标点
+      this.coordsData = locationCoords['seconedRoute'];
+    }
+  },
+
+  /**
+   * 定位真实导航坐标
+   */
+  changeCoord() {
+    clearTimeout(this.naviInt);
+    //定时器
+    this.naviInt = setTimeout(() => {
+      if (!this.fmap || !this.navi) return;
+
+      if (this.coordIndex >= this.coordsData.length || this.data.naviStoped) {
+        this.stopNavi();
+        return;
+      }
+      this.currentCoord = this.coordsData[this.coordIndex];
+
+      /**
+       * 1.用于真实导航，设置定位系统所返回的真实定位坐标，内部自动路径约束，同时触发walking事件
+       * 返回如下结果： {remain: 到终点的剩余距离, walk: 已经走过的距离, distanceToNext: 是下一个转角处的距离,
+       * angle: 当前路线与正北方向的角度, index: 当前路段的索引, point: 路径约束后的点, groupID, 当前的楼层id}
+       */
+      this.navi.locate(this.currentCoord);
+
+      /**
+       * 2.用于真实导航，设置定位系统所返回的真实定位坐标，内部无路径约束，同时触发walking事件，
+       * 返回如下结果： {remain: 到终点的剩余距离, walk: 已经走过的距离, distanceToNext: 是下一个转角处的距离,
+       * angle: 当前路线与正北方向的角度, index: 当前路段的索引, point: 路径约束后的点, groupID, 当前的楼层id}
+       * 此方法与locate的区别为内部不在内部自动计算约束
+       */
+      /*this.navi.locateNoConstraint(this.currentCoord);*/
+
+      this.coordIndex++;
+      this.changeCoord();
+    }, 500);
+  },
+
+  /**
+   * 路径偏移，进行路径重新规划
+   */
+  resetNaviRoute(coordItem) {
+
+    if (!this.navi) {
+      return;
+    }
+
+    //重置导航参数
+    this.coordIndex = 0;
+
+    //更新起点坐标
+    this.navi.setStartPoint({
+      x: coordItem.x,
+      y: coordItem.y,
+      groupID: coordItem.groupID,
+      url: '../../images/start.png',
+      size: 32
+    });
+
+    //更新终点坐标
+    this.navi.setEndPoint({
+      x: naviRealPoints[1].x,
+      y: naviRealPoints[1].y,
+      groupID: naviRealPoints[1].groupID,
+      url: '../../images/end.png',
+      size: 32
+    });
+
+    //画路径线
+    this.navi.drawNaviLine();
+
+    //初始化第二段路径线的起点
+    this.analyseLocationData(1);
+
+    //导航开始
+    this.changeCoord();
+  },
+
+  /**
+   * 开始导航
+   */
+  startNavi() {
+
+    if (!this.naviSwitch) {
+      return;
+    }
+
+    //导航结束之后再次点击开始导航，需重新进行路线规划及模拟定位点
+    if (this.data.naviStoped) {
+      this.createNavi(naviRealPoints);
+      this.setData({
+        naviStoped: false
+      })
+    }
+
+    //导航开关为true且已经加载完locationMarker是可进行导航操作
+    if (this.naviSwitch && this.locationMarker) {
+      this.naviSwitch = false;
+      this.coordIndex = 0;
+      //切换聚焦楼层为起点开始楼层
+      if (this.navi.startMarker.groupID !== this.fmap.focusGroupID) {
+        this.switchGroup(null, this.navi.startMarker.groupID)
+      }
+      //将定位点定位到起点楼层
+      if (this.locationMarker.groupID != this.navi.startMarker.groupID) {
+        //设置locationMarker的位置
+        this.locationMarker.setPosition({
+          //设置定位点的x坐标
+          x: this.navi.startMarker.x,
+          //设置定位点的y坐标
+          y: this.navi.startMarker.y,
+          //设置定位点所在楼层
+          groupID: this.navi.startMarker.groupID
+        });
+      }
+      //获取地图开始导航前地图缩放比例
+      this.startNaviScaleLevel = this.fmap.mapScaleLevel;
+      //放大导航地图
+      this.fmap.mapScaleLevel = {
+        level: this.naviScaleLevel,
+        duration: 0.5,
+        callback: function () { }
+      };
+      //禁用楼层切换控件
+      this.setData({
+        expand: false,
+        enableExpand: false
+      })
+      //将地图的倾斜角度缓动至
+      this.fmap.tiltTo({
+        to: 80,
+        duration: 1
+      });
+      //导航开始
+      this.changeCoord();
+
+    }
+  },
+
+  /**
+   * 结束导航，重置导航开关参数
+   */
+  stopNavi() {
+    //修改导航状态
+    this.naviSwitch = true;
+    this.setData({
+      naviStoped: true,
+      enableExpand: true
+    })
+    //还原导航前地图缩放比例
+    this.fmap.mapScaleLevel = {
+      level: this.startNaviScaleLevel,
+      duration: 0.5,
+      callback: function () { }
+    };
+    clearTimeout(this.naviInt);
+  },
+
+  /**
+   * 距离、时间信息展示
+   */
+  setNaviDescriptions(data) {
+    //距终点的距离
+    let distance = data.remain;
+    //路线提示信息
+    let prompt = this.navi.naviDescriptions[data.index];
+    if (distance < this.maxEndDistance) {
+      // 导航结束
+      this.stopNavi();
+      this.setData({
+        naviStoped: true
+      })
+      return;
+    }
+    //普通人每分钟走80米。
+    let time = distance / 80;
+    let m = parseInt(time);
+    let s = Math.floor((time % 1) * 60);
+
+    //距离终点距离、时间信息展示
+    this.setData({
+      naviStoped: false,
+      distance: distance.toFixed(1),
+      minutes: m,
+      seconds: s,
+      prompt: prompt,
+    })
+  },
+  ///////////////////////////////////////////////
+  //导航回调事件(end)
+  //////////////////////////////////////////////
 
   ///////////////////////////////////////////////
   //楼层控件回调事件(start)
   //////////////////////////////////////////////
   // 设置楼层数据
-  loadScrollFloorCtrl: function () {
-    // 获取楼层id
+  initFloorControl() {
     let groupIDs = [];
     this.fmap.listGroups.map((ls) => {
       let obj = {
@@ -489,14 +803,14 @@ Page({
       mapGroupIDs: groupIDs.reverse(),
       focusGroupID: this.fmap.focusGroupID
     })
-
   },
   // 切换楼层
-  switchGroup(e) {
+  switchGroup(e, groupID) {
     if (this.fmap) {
-      this.fmap.focusGroupID = e.detail;
+      let focusGroupID = groupID !== undefined ? groupID : e.detail
+      this.fmap.focusGroupID = focusGroupID;
       this.setData({
-        focusGroupID: e.detail
+        focusGroupID: focusGroupID
       })
     }
   },

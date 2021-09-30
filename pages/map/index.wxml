@@ -28,5 +28,9 @@
             </van-button>
         </view>
     </van-popup>
-    <!-- <NavigationModel /> -->
+    <van-popup custom-class="popup-warpper" show="{{ isNaviRoute }}" round closeable overlay="{{isPopupOverlay}}"
+        position="bottom" custom-style="height: 20%" bind:close="onCloseRoute">
+        <van-button custom-class="button-route" icon="guide-o" round type="info" bind:click="startNavi">导航
+        </van-button>
+    </van-popup>
 </view>
