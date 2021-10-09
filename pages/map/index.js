@@ -262,12 +262,14 @@ Page({
         wx.getBluetoothDevices({
           success: function (res) {
             //定义一个对象数组来接收Beacon的信息
-            let arrayIBeaconInfo = res.devices.filter(devices => that.data.deviceList.some(item => devices.deviceId === item));
+            let arrayIBeaconInfo = res.devices.filter(devices => that.data.deviceList.some(item => devices.deviceId === item.mac));
             let iBeaconInfo = arrayIBeaconInfo.map(item => {
               return `${item.deviceId},${item.RSSI}`
             })
+            console.log('iBeaconInfo', res, arrayIBeaconInfo, iBeaconInfo)
             if(iBeaconInfo.length > 0)
               util.getLocation(iBeaconInfo.join(';'), function (location) {
+                console.log('location', location)
                 wx.onCompassChange((res)=>{
                   // console.log(location)
                   that.addOrMoveLocationMarker({...location, angle: res.direction})
