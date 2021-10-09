@@ -156,6 +156,9 @@ Page({
 
           // 显示指北针
           this.showCompass();
+
+          // 加载设备marker
+          this.addDevicesMarker();
         })
 
         /**
@@ -266,12 +269,11 @@ Page({
             let iBeaconInfo = arrayIBeaconInfo.map(item => {
               return `${item.deviceId},${item.RSSI}`
             })
-            console.log('iBeaconInfo', res, arrayIBeaconInfo, iBeaconInfo)
             if(iBeaconInfo.length > 0)
               util.getLocation(iBeaconInfo.join(';'), function (location) {
-                console.log('location', location)
+                if(location == null) return;
+
                 wx.onCompassChange((res)=>{
-                  // console.log(location)
                   that.addOrMoveLocationMarker({...location, angle: res.direction})
                 })
               })
@@ -411,6 +413,28 @@ Page({
     });
     //添加imageMarker
     layer.addMarker(im);
+  },
+  // 添加设备Devices Marker
+  addDevicesMarker() {
+    this.data.deviceList.forEach(coord => {
+      //获取目标点层
+      let group = this.fmap.getFMGroup(parseInt(coord.floor));
+      //创建marker，返回当前层中第一个imageMarkerLayer,如果没有，则自动创建
+      let layer = group.getOrCreateLayer('imageMarker');
+      //图标标注对象，默认位置为该楼层中心点
+      let im = new fengmap.FMImageMarker(this.fmap, {
+        x: coord.xaxis,
+        y: coord.yaxis,
+        //设置图片路径
+        url: '../../images/redImageMarker.png',
+        //设置图片显示尺寸
+        size: 32,
+        //marker标注高度
+        height: 4
+      });
+      //添加imageMarker
+      layer.addMarker(im);
+    });
   },
   // 画导航线
   drawNaviLine() {
