@@ -184,7 +184,6 @@ function request(method, params, urlName, contentType, token, fn) {
         method: method,
         header: { "content-type": contentType, "Authorization": token },
         success: function (res) {
-          console.log(apiUrl, res)
           // 请求状态码
           if (res.statusCode == 200) {
             return typeof fn == 'function' && fn(res.data)

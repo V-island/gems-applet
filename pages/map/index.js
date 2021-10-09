@@ -70,6 +70,8 @@ Page({
   currentCoord: null,
   // 导航请求定位点定时器
   naviInt: null,
+  // 初始化定时对象
+  setTime: null,
   onLoad: function (options) {
     const { id, mapId, name } = options
     this.setData({
@@ -104,6 +106,8 @@ Page({
       this.fmap.dispose();
       this.fmap = null;
     }
+    if(this.setTime)
+      clearInterval(this.setTime)
   },
   // 初始化蜂鸟地图
   initFengMap: function () {
@@ -208,7 +212,8 @@ Page({
             deviceList: res || []
           })
           //开始搜索附近的蓝牙设备
-          setInterval(that.getDevicesDiscovery, 1000);
+          if(!that.setTime)
+            that.setTime = setInterval(that.getDevicesDiscovery, 1000);
         })
       }
     })
@@ -273,9 +278,7 @@ Page({
               util.getLocation(iBeaconInfo.join(';'), function (location) {
                 if(location == null) return;
 
-                wx.onCompassChange((res)=>{
-                  that.addOrMoveLocationMarker({...location, angle: res.direction})
-                })
+                that.addOrMoveLocationMarker(location)
               })
           },
           fail: function (res) {
@@ -337,7 +340,8 @@ Page({
   },
   // 添加本地定位Marker
   // fengmap.FMLocationMarker 自定义图片标注对象，为自定义图层
-  addOrMoveLocationMarker({xaxis, yaxis, floor, angle}) {
+  addOrMoveLocationMarker({xaxis, yaxis, floor}) {
+    var that = this
     if (!this.locationMarker) {
       // fengmap.FMLocationMarker 自定义图片标注对象，为自定义图层
       this.locationMarker = new fengmap.FMLocationMarker(this.fmap, {
@@ -361,12 +365,13 @@ Page({
       //添加定位点marker
       this.fmap.addLocationMarker(this.locationMarker);
     } else {
-      // console.log('现在开始移动', {xaxis, yaxis})
       //旋转locationMarker
-      this.locationMarker.rotateTo({
-        to: angle,
-        duration: 1
-      });
+      wx.onCompassChange((res)=>{
+        that.locationMarker.rotateTo({
+          to: res.direction,
+          duration: 1
+        });
+      })
       //移动locationMarker
       this.locationMarker.moveTo({
         x: xaxis,
