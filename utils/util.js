@@ -155,7 +155,7 @@ function getRooms(req, fn) {
 function getLocation(params, fn) {
   var _self = this;
   _self.checkLogin(function (res) {
-    _self.request('GET', {req: params}, `ma/location`, contentType, res.token, function (res) {
+    _self.request('POST', params, `ma/location/stable`, contentTypeJson, res.token, function (res) {
       return typeof fn == 'function' && fn(res.data);
     })
   })

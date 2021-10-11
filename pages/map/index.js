@@ -12,7 +12,9 @@ Page({
     placeId: '',
     fmapID: '',
     appName: '',
-    deviceList: '',
+    deviceList: [],
+    deviceInfo: {},
+    deviceCount: 1,
     mapLoaded: false, //地图是否加载完成
     focusGroupID: 1,
     mapGroupIDs: [],
@@ -213,7 +215,7 @@ Page({
           })
           //开始搜索附近的蓝牙设备
           if(!that.setTime)
-            that.setTime = setInterval(that.getDevicesDiscovery, 1000);
+            that.setTime = setInterval(that.getDevicesDiscovery, 200);
         })
       }
     })
@@ -269,17 +271,38 @@ Page({
         //获取在蓝牙模块生效期间所有已发现的蓝牙设备
         wx.getBluetoothDevices({
           success: function (res) {
+            let deviceInfo = that.data.deviceInfo,
+                deviceCount = that.data.deviceCount
             //定义一个对象数组来接收Beacon的信息
             let arrayIBeaconInfo = res.devices.filter(devices => that.data.deviceList.some(item => devices.deviceId === item.mac));
-            let iBeaconInfo = arrayIBeaconInfo.map(item => {
-              return `${item.deviceId},${item.RSSI}`
-            })
-            if(iBeaconInfo.length > 0)
-              util.getLocation(iBeaconInfo.join(';'), function (location) {
+            // let iBeaconInfo = arrayIBeaconInfo.map(item => {
+            //   return `${item.deviceId},${item.RSSI}`
+            // })
+            arrayIBeaconInfo.forEach(item => {
+              if(deviceInfo.hasOwnProperty(item.deviceId))
+                deviceInfo[item.deviceId].push(item.RSSI)
+              else
+                deviceInfo[item.deviceId] = [item.RSSI]
+            });
+            if(deviceCount > 5){
+              console.log('deviceInfo', deviceInfo)
+              util.getLocation(deviceInfo, function (location) {
                 if(location == null) return;
 
-                that.addOrMoveLocationMarker(location)
+                that.addOrMoveLocationMarker(location);
+
+                that.setData({
+                  deviceInfo: {},
+                  deviceCount: 1,
+                })
               })
+            }else{
+              that.setData({
+                deviceInfo: deviceInfo,
+                deviceCount: deviceCount++,
+              })
+            }
+              
           },
           fail: function (res) {
             console.log("获取蓝牙设备失败！");
