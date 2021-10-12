@@ -215,7 +215,7 @@ Page({
           })
           //开始搜索附近的蓝牙设备
           if(!that.setTime)
-            that.setTime = setInterval(that.getDevicesDiscovery, 200);
+            that.setTime = setInterval(that.getDevicesDiscovery, 500);
         })
       }
     })
@@ -284,7 +284,7 @@ Page({
               else
                 deviceInfo[item.deviceId] = [item.RSSI]
             });
-            if(deviceCount > 10){
+            if(deviceCount > 4){
               util.getLocation(deviceInfo, function (location) {
                 if(location == null) return;
                 that.addOrMoveLocationMarker(location);
