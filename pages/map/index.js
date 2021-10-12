@@ -272,7 +272,7 @@ Page({
         wx.getBluetoothDevices({
           success: function (res) {
             let deviceInfo = that.data.deviceInfo,
-                deviceCount = that.data.deviceCount
+                deviceCount = that.data.deviceCount+1
             //定义一个对象数组来接收Beacon的信息
             let arrayIBeaconInfo = res.devices.filter(devices => that.data.deviceList.some(item => devices.deviceId === item.mac));
             // let iBeaconInfo = arrayIBeaconInfo.map(item => {
@@ -284,11 +284,9 @@ Page({
               else
                 deviceInfo[item.deviceId] = [item.RSSI]
             });
-            if(deviceCount > 5){
-              console.log('deviceInfo', deviceInfo)
+            if(deviceCount > 10){
               util.getLocation(deviceInfo, function (location) {
                 if(location == null) return;
-
                 that.addOrMoveLocationMarker(location);
 
                 that.setData({
@@ -299,7 +297,7 @@ Page({
             }else{
               that.setData({
                 deviceInfo: deviceInfo,
-                deviceCount: deviceCount++,
+                deviceCount: deviceCount,
               })
             }
               
