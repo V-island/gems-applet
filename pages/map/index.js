@@ -284,7 +284,7 @@ Page({
               else
                 deviceInfo[item.deviceId] = [item.RSSI]
             });
-            if(deviceCount > 4){
+            if(deviceCount > 5){
               util.getLocation(deviceInfo, function (location) {
                 if(location == null) return;
                 that.addOrMoveLocationMarker(location);
