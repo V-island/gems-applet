@@ -148,14 +148,27 @@ function getRooms(req, fn) {
   })
 }
 /**
+ * 保存终端坐标
+ * params fn 回调函数
+ * return fn 回调函数
+ */
+function setLocation(params, fn) {
+  var _self = this;
+  _self.checkLogin(function (res) {
+    _self.request('POST', params, `ma/location/rssi_info`, contentTypeJson, res.token, function (res) {
+      return typeof fn == 'function' && fn(res.data);
+    })
+  })
+}
+/**
  * 获取终端坐标
  * params fn 回调函数
  * return fn 回调函数
  */
-function getLocation(params, fn) {
+function getLocation(fn) {
   var _self = this;
   _self.checkLogin(function (res) {
-    _self.request('POST', params, `ma/location/stable`, contentTypeJson, res.token, function (res) {
+    _self.request('GET', '', `ma/location/current_coordinate`, contentTypeJson, res.token, function (res) {
       return typeof fn == 'function' && fn(res.data);
     })
   })
@@ -339,5 +352,6 @@ module.exports = {
   // 地图相关
   getDevices: getDevices,
   getRooms: getRooms,
-  getLocation: getLocation
+  getLocation: getLocation,
+  setLocation: setLocation
 }

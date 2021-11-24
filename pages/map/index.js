@@ -74,6 +74,7 @@ Page({
   naviInt: null,
   // 初始化定时对象
   setTime: null,
+  getTime: null,
   onLoad: function (options) {
     const { id, mapId, name } = options
     this.setData({
@@ -110,6 +111,8 @@ Page({
     }
     if(this.setTime)
       clearInterval(this.setTime)
+    if(this.getTime)
+      clearInterval(this.getTime)
   },
   // 初始化蜂鸟地图
   initFengMap: function () {
@@ -135,6 +138,8 @@ Page({
           appName: this.data.appName,
           // 地图应用密钥
           key: '75165ff8c8231fdedc78c2b82447806a',
+          // 主题ID
+          themeID: '1428639529554505729',
         };
 
         //初始化地图对象
@@ -165,6 +170,9 @@ Page({
 
           // 加载设备marker
           this.addDevicesMarker();
+          
+          if(!this.getTime)
+            this.getTime = setInterval(this.getLocationMarker, 1000);
         })
 
         /**
@@ -275,9 +283,7 @@ Page({
                 deviceCount = that.data.deviceCount
             //定义一个对象数组来接收Beacon的信息
             let arrayIBeaconInfo = res.devices.filter(devices => that.data.deviceList.some(item => devices.deviceId === item.mac));
-            // let iBeaconInfo = arrayIBeaconInfo.map(item => {
-            //   return `${item.deviceId},${item.RSSI}`
-            // })
+
             arrayIBeaconInfo.forEach(item => {
               if(deviceInfo.hasOwnProperty(item.deviceId))
                 deviceInfo[item.deviceId].push(item.RSSI)
@@ -286,11 +292,7 @@ Page({
             });
             if(deviceCount > 5){
               console.log('deviceInfo', deviceInfo)
-              util.getLocation(deviceInfo, function (location) {
-                if(location == null) return;
-
-                that.addOrMoveLocationMarker(location);
-
+              util.setLocation(deviceInfo, function () {
                 that.setData({
                   deviceInfo: {},
                   deviceCount: 1,
@@ -312,6 +314,15 @@ Page({
       fail: function (res) {
         console.log("搜索附近蓝牙失败！");
       }
+    })
+  },
+  // 获取当前实时定位
+  getLocationMarker: function () {
+    var that = this;
+    util.getLocation(function (location) {
+      console.log('location', location)
+      if(location == null) return;
+      that.addOrMoveLocationMarker(location)
     })
   },
   // 是否跳过蓝牙验证
