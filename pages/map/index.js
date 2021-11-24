@@ -223,7 +223,7 @@ Page({
           })
           //开始搜索附近的蓝牙设备
           if(!that.setTime)
-            that.setTime = setInterval(that.getDevicesDiscovery, 200);
+            that.setTime = setInterval(that.getDevicesDiscovery, 500);
         })
       }
     })
@@ -280,7 +280,7 @@ Page({
         wx.getBluetoothDevices({
           success: function (res) {
             let deviceInfo = that.data.deviceInfo,
-                deviceCount = that.data.deviceCount
+                deviceCount = that.data.deviceCount+1
             //定义一个对象数组来接收Beacon的信息
             let arrayIBeaconInfo = res.devices.filter(devices => that.data.deviceList.some(item => devices.deviceId === item.mac));
 
@@ -301,7 +301,7 @@ Page({
             }else{
               that.setData({
                 deviceInfo: deviceInfo,
-                deviceCount: deviceCount++,
+                deviceCount: deviceCount,
               })
             }
               
