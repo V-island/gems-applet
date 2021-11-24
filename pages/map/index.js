@@ -285,10 +285,11 @@ Page({
                 deviceInfo[item.deviceId] = [item.RSSI]
             });
             if(deviceCount > 5){
+              // console.log('deviceInfo', deviceInfo)
               util.getLocation(deviceInfo, function (location) {
+                // console.log(location)
                 if(location == null) return;
                 that.addOrMoveLocationMarker(location);
-
                 that.setData({
                   deviceInfo: {},
                   deviceCount: 1,
