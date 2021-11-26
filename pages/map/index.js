@@ -2,6 +2,9 @@
 import {
   fengmap
 } from '../../utils/fengmap.miniprogram.min.js';
+import {
+  locationCoords
+} from '../../utils/coordinates.js';
 
 // 获取应用实例
 const app = getApp()
@@ -605,8 +608,8 @@ Page({
     // 画出导航线
     this.navi.drawNaviLine();
 
-    //解析定位点数据
-    // this.analyseLocationData(0);
+    // 解析定位点数据
+    this.analyseLocationData(0);
 
     //监听导航事件
     this.navi.on('walking', (data) => {
@@ -665,7 +668,7 @@ Page({
 
   // 定位真实导航坐标
   changeCoord() {
-    clearTimeout(this.naviInt);
+    // clearTimeout(this.naviInt);
     //定时器
     this.naviInt = setTimeout(() => {
       if (!this.fmap || !this.navi) return;
@@ -736,7 +739,6 @@ Page({
 
   // 开始导航
   startNavi() {
-
     if (!this.naviSwitch) {
       return;
     }
