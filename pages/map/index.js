@@ -348,9 +348,11 @@ Page({
     //添加终点imageMarker
     this.initNaviRoute(this.data.markerInfo, true);
   },
+  // 关闭导航
   onCloseRoute: function() {
     this.setData({ isNaviRoute: false, isNaviRoute: true });
   },
+  // 初始化导航线路
   initNaviRoute: function(coord, last) {
     if(!this.firstCoord && !last){
       //记录点击坐标
@@ -567,7 +569,7 @@ Page({
         //调用drawNaviLine绘制导航线时, 是否清除上次调用drawNaviLine绘制的导航线, 默认为true
         autoClearNaviLine: true,
         //导航线与楼层之间的高度偏移设置。默认是1。
-        lineMarkerHeight: 1.5,
+        lineMarkerHeight: 6,
         // 设置导航线的样式
         lineStyle: {
           // 导航线样式
@@ -575,7 +577,7 @@ Page({
           // 设置线的宽度
           lineWidth: 6,
           //设置线动画,false为动画
-          noAnimate: true
+          noAnimate: false
         }
       });
     }
@@ -661,9 +663,7 @@ Page({
     }
   },
 
-  /**
-   * 定位真实导航坐标
-   */
+  // 定位真实导航坐标
   changeCoord() {
     clearTimeout(this.naviInt);
     //定时器
@@ -696,9 +696,7 @@ Page({
     }, 500);
   },
 
-  /**
-   * 路径偏移，进行路径重新规划
-   */
+  // 路径偏移，进行路径重新规划
   resetNaviRoute(coordItem) {
 
     if (!this.navi) {
@@ -736,9 +734,7 @@ Page({
     this.changeCoord();
   },
 
-  /**
-   * 开始导航
-   */
+  // 开始导航
   startNavi() {
 
     if (!this.naviSwitch) {
@@ -797,9 +793,7 @@ Page({
     }
   },
 
-  /**
-   * 结束导航，重置导航开关参数
-   */
+  // 结束导航，重置导航开关参数
   stopNavi() {
     //修改导航状态
     this.naviSwitch = true;
@@ -816,9 +810,7 @@ Page({
     clearTimeout(this.naviInt);
   },
 
-  /**
-   * 距离、时间信息展示
-   */
+  // 距离、时间信息展示
   setNaviDescriptions(data) {
     //距终点的距离
     let distance = data.remain;
