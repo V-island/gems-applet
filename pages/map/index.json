@@ -3,10 +3,13 @@
   "usingComponents": {
     "FMScrollGroupsControl": "../../component/FMScrollGroupsControl/FMScrollGroupsControl",
     "BlueToothView": "../../component/BlueToothView",
-    "NavigationModel": "../../component/NavigationModel",
+    "SelectNaviPopup": "../../component/SelectNaviPopup",
+    "MarkerInfoPopup": "../../component/MarkerInfoPopup",
+    "LocationInfoPopup": "../../component/LocationInfoPopup",
     "van-popup": "@vant/weapp/popup/index",
     "van-divider": "@vant/weapp/divider/index",
     "van-button": "@vant/weapp/button/index",
+    "van-dialog": "@vant/weapp/dialog/index",
     "van-tag": "@vant/weapp/tag/index"
   }
 }

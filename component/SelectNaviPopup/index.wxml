@@ -1,0 +1,8 @@
+<!--component/NavigationModel/index.wxml-->
+<van-popup custom-class="navigate-warpper" show="{{ show }}" round closeable overlay="{{overlay}}" position="bottom" bind:close="onClosePopup">
+    <text class="navigate-title">{{title}}</text>
+    <view class="navigate-body">
+        <van-button custom-class="button" icon="guide-o" round type="info" bind:click="onRealTimeNavi" disabled="{{markers.length < 2}}" block>开始导航</van-button>
+        <van-button custom-class="button" icon="guide-o" round type="info" bind:click="onSimulationNavi" disabled="{{markers.length < 2}}" block>模拟导航</van-button>
+    </view>
+</van-popup>

@@ -1,0 +1,11 @@
+<!--component/LocationInfoPopup/index.wxml-->
+<van-popup custom-class="warpper" show="{{ show }}" round overlay="{{overlay}}" position="bottom">
+  <view class="body">
+    <van-cell-group inset>
+      <van-cell title="{{title}}" use-label-slot>
+        <van-button custom-class="button" round plain type="info" bind:click="onClosePopup">退出</van-button>
+        <text slot="label">{{content}}</text>
+      </van-cell>
+    </van-cell-group>
+  </view>
+</van-popup>

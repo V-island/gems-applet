@@ -1,28 +1,16 @@
 /* pages/map/index.wxss */
 .container {
-    height: 100%;
-    overflow: hidden;
+  height: 100%;
+  overflow: hidden;
 }
-.btn-ctrl{
-    position: absolute;
-    right: 20rpx;
-    top:40rpx;
+.btn-ctrl {
+  position: absolute;
+  right: 20rpx;
+  top: 40rpx;
 }
-.popup-warpper{
-    padding: 30rpx 30rpx 0;
-    box-shadow: 0 0 10rpx #999;
-  }
-  .popup-body{
-    display: flex;
-    flex-direction: column;
-  }
-  .popup-footer{
-    text-align: right;
-  }
-  .popup-title{
-    margin-bottom: 10rpx;
-  }
-  .button-route{
-    width: 40rpx;
-    padding: 0;
-  }
+.van-button--large {
+  width: 100% !important;
+}
+.van-button--danger{
+  width: 100% !important;
+}

@@ -47,7 +47,6 @@ Component({
     isBottom: true,
     needArrow: false
   },
-
   /**
    * 组件的方法列表
    */

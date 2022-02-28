@@ -1,0 +1,12 @@
+<!-- marker信息预览弹框 -->
+<van-popup custom-class="marker-warpper" show="{{ show }}" round closeable overlay="{{overlay}}" position="bottom" bind:close="onClose">
+    <view class="marker-body">
+        <text class="marker-title">{{markerInfo.name || '一楼国道'}}</text>
+        <van-tag round type="primary">{{markerInfo.groupID}}F</van-tag>
+    </view>
+    <van-divider />
+    <view class="marker-footer">
+        <van-button custom-class="button" icon="guide-o" round type="info" bind:click="onSelectNavi">路线
+        </van-button>
+    </view>
+</van-popup>

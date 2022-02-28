@@ -1,0 +1,23 @@
+/* component/MarkerInfoPopup/index.wxss */
+.marker-warpper {
+    padding: 20px 20px 10px !important;
+    box-shadow: 0 0 10rpx #999;
+}
+
+.marker-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.marker-footer {
+    text-align: right;
+}
+
+.marker-title {
+    margin-bottom: 10px;
+}
+
+.marker-warpper .button {
+    width: 100px;
+    padding: 0;
+}

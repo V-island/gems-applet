@@ -1,0 +1,22 @@
+/* component/NavigationModel/index.wxss */
+.navigate-warpper{
+  padding-bottom: 10px;
+  box-sizing: border-box;
+}
+.navigate-title{
+  padding-top: 20px;
+  text-align: center;
+  display: block;
+}
+.navigate-body {
+  padding: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+.navigate-warpper .button{
+  width: 130px;
+  margin: 0 20px;
+}

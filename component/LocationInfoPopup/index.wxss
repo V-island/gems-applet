@@ -1,0 +1,20 @@
+/* component/LocationInfoPopup/index.wxss */
+.warpper {
+    padding: 10px 0 !important;
+    box-shadow: 0 0 10rpx #999;
+}
+
+.body {
+    display: flex;
+    flex-direction: column;
+}
+
+.title {
+    margin-bottom: 10px;
+}
+
+.body .button {
+    width: 80px;
+    padding: 0;
+    height: 40px;
+}
