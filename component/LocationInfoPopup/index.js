@@ -26,7 +26,7 @@ Component({
       const prompt = info.prompt || {}
       this.setData({
         title: route.name,
-        content: `剩余${info.distance || 0}米, ${prompt.endDirection || ''}`
+        content: `剩余${info.remain || 0}米, ${prompt.endDirection || ''}`
       });
     }
   },

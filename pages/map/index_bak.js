@@ -51,6 +51,7 @@ Page({
   routeOpiton: {},
   // 当前定位
   location: null,
+
   //定义定位点marker
   locationMarker: null,
   // 起终点坐标
@@ -58,7 +59,26 @@ Page({
   // 定义markert图层数组
   layers: [],
   /** =================== 实时导航参数 ====================== */
-
+  // 导航前地图缩放比例
+  startNaviScaleLevel: 20,
+  // 导航过程中地图缩放比例
+  naviScaleLevel: 22,
+  // 导航开关
+  naviSwitch: true,
+  // 距离终点的最大距离，结束导航 单位：米
+  maxEndDistance: 5,
+  // 路径偏移的最大距离，单位：米
+  maxOffsetDis: 15,
+  // 路径偏移的最小距离，在最小距离以内坐标点自动约束到路径线上
+  minOffsetDis: 3,
+  // 路径线真实坐标点数据
+  coordsData: [],
+  //定位点下标
+  coordIndex: 0,
+  // 当前定位点原始坐标
+  currentCoord: null,
+  // 导航请求定位点定时器
+  naviInt: null,
   // 初始化定时对象
   setTime: null,
   getTime: null,
@@ -140,21 +160,29 @@ Page({
         //地图加载完成事件
         this.fmap.on('loadComplete', () => {
           console.log('地图加载完成');
+
           this.setData({
             mapLoaded: true
           })
+
           //加载楼层切换控件
           this.initFloorControl();
+
           // 显示指北针
           this.initShowCompass();
+
           // 加载设备marker
-          this.initDevicesMarker();
+          this.addDevicesMarker();
+          
           // 开始获取实时地址
           if(!this.getTime)
             this.getTime = setInterval(this.getLocationMarker, 1000);
         });
-        // 地图点击事件
-        // 通过点击地图，获取位置坐标
+
+        /**
+         * 地图点击事件
+         * 通过点击地图，获取位置坐标
+         * */
         this.fmap.on('mapClickNode', (event) => {
           if(this.data.coords.length == 2) return false;
           if (event.target && event.target.nodeType == fengmap.FMNodeType.MODEL && this.naviAnalyser) {
@@ -176,7 +204,7 @@ Page({
                 this.setData({ coords: coords });
                 this.deleteMarker();
                 // 创建路径条
-                this.createDrawNaviLine(coords);
+                this.drawNaviLine(coords);
               }).catch(() => {
                 // on cancel
               });
@@ -212,45 +240,8 @@ Page({
       }
     })
   },
-  // 设置楼层数据
-  initFloorControl() {
-    let groupIDs = [];
-    this.fmap.listGroups.map((ls) => {
-      let obj = {
-        alias: ls.alias,
-        gid: ls.gid,
-        gname: ls.gname
-      }
-      groupIDs.push(obj);
-      return obj;
-    });
-
-    this.setData({
-      mapGroupIDs: groupIDs.reverse(),
-      focusGroupID: this.fmap.focusGroupID
-    })
-  },
-  // 显示指北针
-  initShowCompass() {
-    this.fmap.compass.setBgImage('../../images/compass_bg.png'); //设置背景图片
-    this.fmap.compass.setFgImage('../../images/compass_fg.png'); //设置前景图片
-    this.fmap.showCompass = true;
-
-    // 点击指北针事件, 使角度归0
-    this.fmap.on('mapClickCompass', () => {
-      this.fmap.rotateTo({
-        //设置角度
-        to: 0,
-        //动画持续时间，默认为。3秒
-        duration: 0.3,
-        callback: function () { //回调函数
-          console.log('rotateTo complete!');
-        }
-      })
-    });
-  },
   // 添加设备Devices Marker
-  initDevicesMarker() {
+  addDevicesMarker() {
     this.data.deviceList.forEach(coord => {
       //获取目标点层
       let group = this.fmap.getFMGroup(parseInt(coord.floor));
@@ -320,7 +311,7 @@ Page({
     });
   },
   // 画出导航轨迹线
-  createDrawNaviLine() {
+  drawNaviLine() {
     const coords = this.data.coords;
 
     if (!this.navi) {
@@ -361,6 +352,7 @@ Page({
         x: coords[1].x,
         y: coords[1].y,
         groupID: coords[1].groupID,
+        level: coords[1].groupID,
         url: '../../images/start.png',
         size: 32,
         height: 4
@@ -369,6 +361,7 @@ Page({
         x: coords[0].x,
         y: coords[0].y,
         groupID: coords[0].groupID,
+        level: coords[1].groupID,
         url: '../../images/end.png',
         size: 32,
         height: 4
@@ -382,6 +375,19 @@ Page({
     this.navi.setEndPoint(this.routeOpiton.end);
     // 画出导航线
     this.navi.drawNaviLine();
+
+    navigation.route({}, (result) => {
+
+      navigation.drawNaviLine();
+      
+      //定时器
+      onUpdateLocation(info=>{
+        navigation.locate(info);
+      });
+    
+    }, (result) => {
+      console.log("failed", result);
+    });
 
     //距终点的距离
     let distance = this.navi.naviDistance;
@@ -430,6 +436,7 @@ Page({
                 deviceCount: deviceCount,
               })
             }
+              
           },
           fail: function (res) {
             console.log("获取蓝牙设备失败！");
@@ -445,14 +452,9 @@ Page({
   getLocationMarker: function () {
     var that = this;
     util.getLocation(function (location) {
+      console.log('location', location)
       if(location == null) return;
-      console.log(location);
-      that.location = {
-        x: location.xaxis,
-        y: location.yaxis,
-        groupID: location.floor
-      };
-      that.addOrMoveLocationMarker(location);
+      that.addOrMoveLocationMarker(location)
     })
   },
   // 添加本地定位Marker
@@ -485,7 +487,7 @@ Page({
       //旋转locationMarker
       wx.onCompassChange((res)=>{
         that.locationMarker.rotateTo({
-          to: -res.direction,
+          to: res.direction,
           duration: 1
         });
       })
@@ -528,6 +530,43 @@ Page({
     })
   },
   /** =================== 蜂鸟控件事件 ====================== */
+  // 设置楼层数据
+  initFloorControl() {
+    let groupIDs = [];
+    this.fmap.listGroups.map((ls) => {
+      let obj = {
+        alias: ls.alias,
+        gid: ls.gid,
+        gname: ls.gname
+      }
+      groupIDs.push(obj);
+      return obj;
+    });
+
+    this.setData({
+      mapGroupIDs: groupIDs.reverse(),
+      focusGroupID: this.fmap.focusGroupID
+    })
+  },
+  // 显示指北针
+  initShowCompass() {
+    this.fmap.compass.setBgImage('../../images/compass_bg.png'); //设置背景图片
+    this.fmap.compass.setFgImage('../../images/compass_fg.png'); //设置前景图片
+    this.fmap.showCompass = true;
+
+    // 点击指北针事件, 使角度归0
+    this.fmap.on('mapClickCompass', () => {
+      this.fmap.rotateTo({
+        //设置角度
+        to: 0,
+        //动画持续时间，默认为。3秒
+        duration: 0.3,
+        callback: function () { //回调函数
+          console.log('rotateTo complete!');
+        }
+      })
+    });
+  },
   // 切换楼层
   handleSwitchGroup(e, groupID) {
     if (this.fmap) {
@@ -578,7 +617,6 @@ Page({
         }
       });
 
-      // 当剩余距离小于设置的距离终点的最小距离时，自动结束导航
       if(distance < 3){
         that.navi.pause();
         const info = that.data.naviRouteInfo
@@ -591,121 +629,270 @@ Page({
           that.onCloseLocationInfoPopup()
         });
       }
-    });
+    });   
   },
   /** =================== 实时导航 ====================== */
-  // 实时导航事件
-  onRealTimeNavi() {
-    const that = this;
-
-    this.navi.locate(this.location)
-    this.navi.on('walking', function(info) {
-      // 定位点的路线偏移距离
-      let distance = info.distance;
-      // 距终点的距离
-      let remain = info.remain;
-      // 路线提示信息
-      let prompt = that.navi.naviDescriptionsData[info.index];
-      // 普通人每分钟走80米。
-      let time = remain / 80;
-      let minutes = parseInt(time);
-      let seconds = Math.floor((time % 1) * 60);
-
-      that.setData({
-        locateInfo: {
-          remain: remain.toFixed(0),
-          minutes: minutes,
-          seconds: seconds,
-          prompt: prompt,
-          route: that.data.markerInfo
+  // 创建导航
+  // fengmap.FMNavigation 导航相关的控制类,封装了自动设置起始点标注，路径分析，模拟导航，导航动画的功能。
+  handleCreateNavi(coords) {
+    if (!this.navi) {
+      //初始化导航对象
+      this.navi = new fengmap.FMNavigation({
+        //地图对象
+        map: this.fmap,
+        //导航结果文字描述内容的语言类型参数, 目前支持中英文。参考FMLanguaeType。
+        naviLanguage: fengmap.FMLanguageType.ZH,
+        //导航中路径规划模式, 支持最短路径、最优路径两种。默认为MODULE_SHORTEST, 最短路径。
+        naviMode: fengmap.FMNaviMode.MODULE_SHORTEST,
+        //导航中的路线规划梯类优先级, 默认为PRIORITY_DEFAULT, 详情参考FMNaviPriority。
+        naviPriority: fengmap.FMNaviPriority.PRIORITY_DEFAULT,
+        //调用drawNaviLine绘制导航线时, 是否清除上次调用drawNaviLine绘制的导航线, 默认为true
+        autoClearNaviLine: true,
+        //导航线与楼层之间的高度偏移设置。默认是1。
+        lineMarkerHeight: 6,
+        // 设置导航线的样式
+        lineStyle: {
+          // 导航线样式
+          lineType: fengmap.FMLineType.FMARROW,
+          // 设置线的宽度
+          lineWidth: 6,
+          //设置线动画,false为动画
+          noAnimate: false
         }
       });
-      
-      // 更新定位图标的位置及旋转角度
-      setLocationMakerPosition(info.point, info.angle);
-
-      // 当路线偏移距离大于设置的路径偏移的最大距离时，自动结束导航
-      // 路径偏移的最大距离，单位：米
-      if (distance > 13) {
-        console.log('路径偏移，重新规划路线');
-        // 重新绘制导航线
-        that.resetRealTimeNavi(info.point);
-      }
-      // 当剩余距离小于设置的距离终点的最小距离时，自动结束导航
-      // 单位：米
-      if(remain < 3){
-        that.navi.pause();
-        const info = that.data.naviRouteInfo
-        Dialog.alert({
-          message: `本次行程距离${info.remain},历时${info.time}`,
-          theme: 'round-button',
-          selector: '#round-dialog',
-          showCancelButton: false
-        }).then(() => {
-          that.onCloseLocationInfoPopup()
-        });
-      }
-    });
-  },
-  // 设置定位标注点位置信息
-  setLocationMakerPosition(coord,angle){
-    if (angle) {
-      // 定位点方向始终与路径线保持平行
-      this.locationMarker.rotateTo({
-        to: -angle,
-        duration: 0.5
-      });
-      // 第一人称需旋转地图角度
-      this.fmap.rotateTo({
-        to: angle,
-        duration: 0.5,
-      })
-    }
-    // 不同楼层
-    var groupID = this.locationMarker.groupID;
-    if (groupID !== coord.groupID) {
-      // 重新设置聚焦楼层
-      this.fmap.changeFocusToGroup({
-        duration: 1,
-        gid: coord.groupID,
-      })
-      // 删除定位点marker
-      this.fmap.removeLocationMarker(this.locationMarker);
-      // fengmap.FMLocationMarker 自定义图片标注对象，为自定义图层
-      this.locationMarker = new fengmap.FMLocationMarker(this.fmap, {
-        x: coord.x,  
-        y: coord.y,  
-        url: '../../images/location.png',
-        groupID: coord.groupID, 
-        size: 30,   
-        height: 3,
-      });
-      // 添加定位点marker
-      this.fmap.addLocationMarker(this.locationMarker);
     }
 
-    //移动locationMarker
-    locationMarker.moveTo({
-      x: coord.x,
-      y: coord.y,
-      groupID: coord.groupID
-    });
-  },
-  // 路径偏移，进行路径重新规划
-  resetRealTimeNavi(coords) {
     //添加起点
     this.navi.setStartPoint({
-      x: coords.x,
-      y: coords.y,
-      groupID: coords.groupID,
+      x: coords[0].x,
+      y: coords[0].y,
+      groupID: coords[0].groupID,
       url: '../../images/start.png',
       size: 32,
       height: 4
     });
 
-    this.navi.clearNaviLine();
+    //添加终点
+    this.navi.setEndPoint({
+      x: coords[1].x,
+      y: coords[1].y,
+      groupID: coords[1].groupID,
+      url: '../../images/end.png',
+      size: 32,
+      height: 4
+    });
+
+    // 画出导航线
     this.navi.drawNaviLine();
-    this.onRealTimeNavi();
+
+    // 解析定位点数据
+    this.analyseLocationData(0);
+
+    //监听导航事件
+    this.navi.on('walking', (data) => {
+      // 当定位点偏离路径线大于约定的最大偏移距离时，进行路径重新规划
+      if (data.distance > this.minOffsetDis) {
+        //在最小和最大偏移距离之间，坐标点用原始定位坐标
+        data.point = this.currentCoord;
+      }
+
+      //更新导航信息
+      this.setRealTimeNaviInfo(data);
+
+      //更新定位图标的位置及旋转角度
+      this.setLocationMakerPosition(data.point, data.angle);
+      if (data.distance > this.maxOffsetDis) {
+        console.log('路径偏移，重新规划路线');
+        clearTimeout(this.naviInt);
+        //重新设置起终点坐标，画路径线，重新开始导航
+        this.resetRealTimeNaviRoute(data.point);
+        return;
+      }
+
+      /**
+       * 当剩余距离小于设置的距离终点的最小距离时，自动结束导航
+       */
+      if (data.remain < this.maxEndDistance || data.remain == 0) {
+        console.log('距离小于设置的距离终点的最小距离，导航自动结束');
+        //结束导航
+        this.onStopRealTimeNavi();
+        this.setData({
+          naviStoped: true
+        })
+        return;
+      }
+    });
+  },
+  // 开始导航
+  onStartRealTimeNavi() {
+    if (!this.naviSwitch) {
+      return;
+    }
+    //导航结束之后再次点击开始导航，需重新进行路线规划及模拟定位点
+    if (this.data.naviStoped) {
+      this.handleCreateNavi(naviRealPoints);
+      this.setData({
+        naviStoped: false
+      })
+    }
+    //导航开关为true且已经加载完locationMarker是可进行导航操作
+    if (this.naviSwitch && this.locationMarker) {
+      this.naviSwitch = false;
+      this.coordIndex = 0;
+      //切换聚焦楼层为起点开始楼层
+      if (this.navi.startMarker.groupID !== this.fmap.focusGroupID) {
+        this.switchGroup(null, this.navi.startMarker.groupID)
+      }
+      //将定位点定位到起点楼层
+      if (this.locationMarker.groupID != this.navi.startMarker.groupID) {
+        //设置locationMarker的位置
+        this.locationMarker.setPosition({
+          //设置定位点的x坐标
+          x: this.navi.startMarker.x,
+          //设置定位点的y坐标
+          y: this.navi.startMarker.y,
+          //设置定位点所在楼层
+          groupID: this.navi.startMarker.groupID
+        });
+      }
+      //获取地图开始导航前地图缩放比例
+      this.startNaviScaleLevel = this.fmap.mapScaleLevel;
+      //放大导航地图
+      this.fmap.mapScaleLevel = {
+        level: this.naviScaleLevel,
+        duration: 0.5,
+        callback: function () { }
+      };
+      //禁用楼层切换控件
+      this.setData({
+        expand: false,
+        enableExpand: false
+      })
+      //将地图的倾斜角度缓动至
+      this.fmap.tiltTo({
+        to: 80,
+        duration: 1
+      });
+      //导航开始
+      this.changeRealTimeNaviCoord();
+    }
+  },
+  // 结束导航，重置导航开关参数
+  onStopRealTimeNavi() {
+    //修改导航状态
+    this.naviSwitch = true;
+    this.setData({
+      naviStoped: true,
+      enableExpand: true
+    })
+    //还原导航前地图缩放比例
+    this.fmap.mapScaleLevel = {
+      level: this.startNaviScaleLevel,
+      duration: 0.5,
+      callback: function () { }
+    };
+    clearTimeout(this.naviInt);
+  },
+  // 距离、时间信息展示
+  setRealTimeNaviInfo(data) {
+    //距终点的距离
+    let distance = data.remain;
+    //路线提示信息
+    let prompt = this.navi.naviDescriptions[data.index];
+    if (distance < this.maxEndDistance) {
+      // 导航结束
+      this.onStopRealTimeNavi();
+      this.setData({
+        naviStoped: true
+      })
+      return;
+    }
+    //普通人每分钟走80米。
+    let time = distance / 80;
+    let m = parseInt(time);
+    let s = Math.floor((time % 1) * 60);
+
+    //距离终点距离、时间信息展示
+    this.setData({
+      naviStoped: false,
+      distance: distance.toFixed(1),
+      minutes: m,
+      seconds: s,
+      prompt: prompt,
+    })
+  },
+  // 路径偏移，进行路径重新规划
+  resetRealTimeNaviRoute(coordItem) {
+    if (!this.navi) return;
+    //重置导航参数
+    this.coordIndex = 0;
+    //更新起点坐标
+    this.navi.setStartPoint({
+      x: coordItem.x,
+      y: coordItem.y,
+      groupID: coordItem.groupID,
+      url: '../../images/start.png',
+      size: 32
+    });
+    //更新终点坐标
+    this.navi.setEndPoint({
+      x: naviRealPoints[1].x,
+      y: naviRealPoints[1].y,
+      groupID: naviRealPoints[1].groupID,
+      url: '../../images/end.png',
+      size: 32
+    });
+    //画路径线
+    this.navi.drawNaviLine();
+    //初始化第二段路径线的起点
+    this.analyseLocationData(1);
+    //导航开始
+    this.changeRealTimeNaviCoord();
+  },
+  // 定位真实导航坐标
+  changeRealTimeNaviCoord() {
+    // clearTimeout(this.naviInt);
+    //定时器
+    this.naviInt = setTimeout(() => {
+      if (!this.fmap || !this.navi) return;
+
+      if (this.coordIndex >= this.coordsData.length || this.data.naviStoped) {
+        this.onStopRealTimeNavi();
+        return;
+      }
+      this.currentCoord = this.coordsData[this.coordIndex];
+
+      /**
+       * 1.用于真实导航，设置定位系统所返回的真实定位坐标，内部自动路径约束，同时触发walking事件
+       * 返回如下结果： {remain: 到终点的剩余距离, walk: 已经走过的距离, distanceToNext: 是下一个转角处的距离,
+       * angle: 当前路线与正北方向的角度, index: 当前路段的索引, point: 路径约束后的点, groupID, 当前的楼层id}
+       */
+      this.navi.locate(this.currentCoord);
+
+      /**
+       * 2.用于真实导航，设置定位系统所返回的真实定位坐标，内部无路径约束，同时触发walking事件，
+       * 返回如下结果： {remain: 到终点的剩余距离, walk: 已经走过的距离, distanceToNext: 是下一个转角处的距离,
+       * angle: 当前路线与正北方向的角度, index: 当前路段的索引, point: 路径约束后的点, groupID, 当前的楼层id}
+       * 此方法与locate的区别为内部不在内部自动计算约束
+       */
+      /*this.navi.locateNoConstraint(this.currentCoord);*/
+
+      this.coordIndex++;
+      this.changeRealTimeNaviCoord();
+    }, 500);
+  },
+  // 定位点数据解析，模拟数据点
+  // 真实项目中应该通过定位接口进行实时定位
+  // firstRoute:路径偏移前定位点集合
+  // seconedRoute:路径偏移后重新路径规划定位点集合
+  analyseLocationData(type) {
+    if (type === 0) {
+      //第一条路径线模拟坐标点
+      this.coordsData = locationCoords['firstRoute'];
+    } else {
+      //重新规划后路径线模拟坐标点
+      this.coordsData = locationCoords['seconedRoute'];
+    }
   },
   /** =================== 通用事件 ====================== */
   // 路线选择
@@ -757,10 +944,13 @@ Page({
   },
   // 开始实时导航
   handleRealTimeNavi: function() {
-    this.onRealTimeNavi();
-    this.setData({
-      isLocationInfoShow: true,
-      isSelectNaviShow: false,
+    Dialog.alert({
+      message: '未正确连接蓝牙设备',
+      theme: 'round-button',
+      selector: '#round-dialog',
+      showCancelButton: false
+    }).then(() => {
+      console.log('开始实时导航');
     });
   },
   // 开始模拟导航
