@@ -58,10 +58,11 @@ Page({
   // 定义markert图层数组
   layers: [],
   /** =================== 实时导航参数 ====================== */
-
   // 初始化定时对象
   setTime: null,
   getTime: null,
+  updateLocation: null,
+  getSeconds: 1000,
   // 生命周期函数--监听页面加载
   onLoad: function (options) {
     const { id, mapId, name } = options
@@ -151,7 +152,7 @@ Page({
           this.initDevicesMarker();
           // 开始获取实时地址
           if(!this.getTime)
-            this.getTime = setInterval(this.getLocationMarker, 1000);
+            this.getTime = setInterval(this.getLocationMarker, this.getSeconds);
         });
         // 地图点击事件
         // 通过点击地图，获取位置坐标
@@ -446,13 +447,14 @@ Page({
     var that = this;
     util.getLocation(function (location) {
       if(location == null) return;
-      console.log(location);
+
       that.location = {
         x: location.xaxis,
         y: location.yaxis,
         groupID: location.floor
       };
-      that.addOrMoveLocationMarker(location);
+      if(!that.data.isLocationInfoShow)
+        that.addOrMoveLocationMarker(location);
     })
   },
   // 添加本地定位Marker
@@ -597,9 +599,12 @@ Page({
   // 实时导航事件
   onRealTimeNavi() {
     const that = this;
-
-    this.navi.locate(this.location)
+    //定时器
+    this.onUpdateLocation(()=>{
+      this.navi.locate(this.location)
+    });
     this.navi.on('walking', function(info) {
+      let point = that.location || info.point;
       // 定位点的路线偏移距离
       let distance = info.distance;
       // 距终点的距离
@@ -622,22 +627,26 @@ Page({
       });
       
       // 更新定位图标的位置及旋转角度
-      setLocationMakerPosition(info.point, info.angle);
+      that.setLocationMakerPosition(that, point, info.angle);
 
       // 当路线偏移距离大于设置的路径偏移的最大距离时，自动结束导航
       // 路径偏移的最大距离，单位：米
       if (distance > 13) {
         console.log('路径偏移，重新规划路线');
+        // 清除循环
+        that.stopUpdateLocation();
         // 重新绘制导航线
-        that.resetRealTimeNavi(info.point);
+        that.resetRealTimeNavi(that, point);
       }
       // 当剩余距离小于设置的距离终点的最小距离时，自动结束导航
       // 单位：米
       if(remain < 3){
+        // 清除循环
+        that.stopUpdateLocation();
         that.navi.pause();
         const info = that.data.naviRouteInfo
         Dialog.alert({
-          message: `本次行程距离${info.remain},历时${info.time}`,
+          message: `本次行程历时${info.time}`,
           theme: 'round-button',
           selector: '#round-dialog',
           showCancelButton: false
@@ -648,31 +657,31 @@ Page({
     });
   },
   // 设置定位标注点位置信息
-  setLocationMakerPosition(coord,angle){
+  setLocationMakerPosition(that, coord, angle){
     if (angle) {
       // 定位点方向始终与路径线保持平行
-      this.locationMarker.rotateTo({
+      that.locationMarker.rotateTo({
         to: -angle,
         duration: 0.5
       });
       // 第一人称需旋转地图角度
-      this.fmap.rotateTo({
+      that.fmap.rotateTo({
         to: angle,
         duration: 0.5,
       })
     }
     // 不同楼层
-    var groupID = this.locationMarker.groupID;
+    var groupID = that.locationMarker.groupID;
     if (groupID !== coord.groupID) {
       // 重新设置聚焦楼层
-      this.fmap.changeFocusToGroup({
+      that.fmap.changeFocusToGroup({
         duration: 1,
         gid: coord.groupID,
       })
       // 删除定位点marker
-      this.fmap.removeLocationMarker(this.locationMarker);
+      that.fmap.removeLocationMarker(that.locationMarker);
       // fengmap.FMLocationMarker 自定义图片标注对象，为自定义图层
-      this.locationMarker = new fengmap.FMLocationMarker(this.fmap, {
+      that.locationMarker = new fengmap.FMLocationMarker(that.fmap, {
         x: coord.x,  
         y: coord.y,  
         url: '../../images/location.png',
@@ -681,20 +690,20 @@ Page({
         height: 3,
       });
       // 添加定位点marker
-      this.fmap.addLocationMarker(this.locationMarker);
+      that.fmap.addLocationMarker(that.locationMarker);
     }
 
     //移动locationMarker
-    locationMarker.moveTo({
+    that.locationMarker.moveTo({
       x: coord.x,
       y: coord.y,
       groupID: coord.groupID
     });
   },
   // 路径偏移，进行路径重新规划
-  resetRealTimeNavi(coords) {
+  resetRealTimeNavi(that, coords) {
     //添加起点
-    this.navi.setStartPoint({
+    that.navi.setStartPoint({
       x: coords.x,
       y: coords.y,
       groupID: coords.groupID,
@@ -703,9 +712,18 @@ Page({
       height: 4
     });
 
-    this.navi.clearNaviLine();
-    this.navi.drawNaviLine();
-    this.onRealTimeNavi();
+    that.navi.clearNaviLine();
+    that.navi.drawNaviLine();
+    that.onRealTimeNavi();
+  },
+  // 更新实时导航位置更新
+  onUpdateLocation(callback){
+    this.updateLocation = setInterval(callback, this.getSeconds);
+  },
+  // 停止实时导航位置更新
+  stopUpdateLocation() {
+    clearInterval(this.updateLocation);
+    this.updateLocation = null;
   },
   /** =================== 通用事件 ====================== */
   // 路线选择
@@ -729,6 +747,7 @@ Page({
       isMarkerInfoShow: false
     });
     this.deleteMarker();
+    this.initDevicesMarker();
   },
   // 关闭选择导航弹框
   onCloseSelectNaviPopup: function() {
@@ -739,6 +758,7 @@ Page({
       isMarkerInfoShow: true,
       coords: []
     });
+    this.deleteMarker();
     //添加imageMarker
     this.addImageMarker(this.data.markerInfo);
   },
@@ -749,7 +769,10 @@ Page({
       isLocationInfoShow: false,
       isSelectNaviShow: true,
       coords: coords
-    })
+    });
+    // 清除循环
+    if(this.updateLocation) this.stopUpdateLocation();
+
     this.navi.stop();
     this.navi.clearAll();
     //添加终点imageMarker
