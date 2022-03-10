@@ -14,6 +14,8 @@ Page({
     placeId: '',
     fmapID: '',
     appName: '',
+    themeId: '',
+    mapKey: '',
     deviceList: [],
     deviceInfo: {},
     deviceCount: 1,
@@ -65,11 +67,13 @@ Page({
   getSeconds: 1000,
   // 生命周期函数--监听页面加载
   onLoad: function (options) {
-    const { id, mapId, name } = options
+    const { id, mapId, themeId, mapKey, name } = options
     this.setData({
       placeId: id,
       fmapID: mapId,
-      appName: name
+      appName: name,
+      themeId: themeId,
+      mapKey: mapKey
     })
     var that = this;
     //是否正确打开蓝牙
@@ -125,9 +129,9 @@ Page({
           // 地图应用名称p
           appName: this.data.appName,
           // 地图应用密钥
-          key: '75165ff8c8231fdedc78c2b82447806a',
+          key: this.data.mapKey,
           // 主题ID
-          themeID: '1428639529554505729',
+          themeID: this.data.themeId,
         };
         //初始化地图对象
         this.fmap = new fengmap.FMMap(mapOptions);
@@ -604,7 +608,8 @@ Page({
       this.navi.locate(this.location)
     });
     this.navi.on('walking', function(info) {
-      let point = that.location || info.point;
+      // let point = that.location || info.point;
+      let point = info.point;
       // 定位点的路线偏移距离
       let distance = info.distance;
       // 距终点的距离
@@ -640,7 +645,7 @@ Page({
       }
       // 当剩余距离小于设置的距离终点的最小距离时，自动结束导航
       // 单位：米
-      if(remain < 3){
+      if(remain < 0.5){
         // 清除循环
         that.stopUpdateLocation();
         that.navi.pause();

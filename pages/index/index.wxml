@@ -1,7 +1,7 @@
 <!--index.wxml-->
 <scroll-view scroll-y="true">
   <view wx:for="{{placeList}}" wx:key="id">
-    <view data-id="{{item.id}}" data-mapId="{{item.mapId}}" data-name="{{item.name}}" class="list-item" bindtap="toMap">
+    <view data-id="{{item.id}}" data-mapId="{{item.mapId}}" data-mapKey="{{item.mapKey}}" data-themeId="{{item.themeId}}" data-name="{{item.name}}" class="list-item" bindtap="toMap">
       {{item.name}}
     </view>
   </view>

@@ -17,9 +17,9 @@ Page({
     })
   },
   toMap(e) {
-    const {id, mapid, name} = e.currentTarget.dataset;
+    const {id, mapid, themeid, mapkey, name} = e.currentTarget.dataset;
     wx.navigateTo({
-      url: `/pages/map/index?id=${id}&mapId=${mapid}&name=${name}`
+      url: `/pages/map/index?id=${id}&mapId=${mapid}&themeId=${themeid}&mapKey=${mapkey}&name=${name}`
     })
   },
 });
